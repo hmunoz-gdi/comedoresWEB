@@ -66,3 +66,7 @@ Esta prueba sí agrega un consumo del empleado ficticio 40001 a la base de desar
 - Confirmar licencia del código propio con la organización antes de publicarlo. El stack es de código abierto; no se ha asignado una licencia al código institucional sin autorización.
 
 El logo institucional no se incluye: usar un recurso autorizado. La cabecera emplea texto en esta versión. Las dependencias mantienen las licencias de sus autores.
+
+## Guías para compartir
+
+En [docs](docs/README.md) están la guía rápida ilustrada para el equipo y la propuesta para presentar el avance a jefatura, en PDF, Word y lectura web.

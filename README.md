@@ -70,3 +70,7 @@ El logo institucional no se incluye: usar un recurso autorizado. La cabecera emp
 ## Guías para compartir
 
 En [docs](docs/README.md) están la guía rápida ilustrada para el equipo y la propuesta para presentar el avance a jefatura, en PDF, Word y lectura web.
+
+## Perfil propio y fotografías
+
+Se puede agregar un perfil local y mostrar JPG/PNG sin subir datos a GitHub. Consulta [Perfil y fotos](docs/PERFIL-Y-FOTOS.md). Los perfiles existentes no se sobrescriben y la carpeta `.local` está excluida del repositorio.

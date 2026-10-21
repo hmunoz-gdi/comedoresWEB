@@ -2,21 +2,34 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 namespace Comedores.Web.Pages;
-public class RegisterModel(AppDb db,MealService meals):PageModel {
+public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):PageModel {
  [BindProperty(SupportsGet=true)] public string Number {get;set;}="";
  [BindProperty] public Guid RequestId {get;set;}
  [TempData] public string? Message {get;set;}
  public Employee? Employee {get;set;}
  public string? Room {get;set;}
  public int TodayCount {get;set;}
+ public bool HasPhoto {get;set;}
  public async Task OnGetAsync() {
   Room=(await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress)))?.DiningRoom.Name;
   RequestId=Guid.NewGuid();
   if(string.IsNullOrWhiteSpace(Number)) return;
   Employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number.Trim());
   if(Employee==null) { Message="Empleado no encontrado en el catálogo.";return; }
+  HasPhoto=photos.Find(Employee.Number)!=null;
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
   TodayCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==Employee.Id && x.ServiceDate==date);
+ }
+ public async Task<IActionResult> OnGetPhotoAsync(string number) {
+  Response.Headers.CacheControl="no-store, private";
+  Response.Headers["X-Content-Type-Options"]="nosniff";
+  var path=photos.Find(number??"");
+  if(path is null || !await db.Employees.AnyAsync(x=>x.Number==number)) return NotFound();
+  byte[] bytes;
+  try { bytes=await System.IO.File.ReadAllBytesAsync(path); }
+  catch(IOException) { return NotFound(); }
+  var type=EmployeePhotos.ContentType(bytes);
+  return type is null ? NotFound() : File(bytes,type);
  }
  public async Task<IActionResult> OnPostAsync() {
   if(!ModelState.IsValid) {Message="Solicitud inválida.";return RedirectToPage(new {Number});}

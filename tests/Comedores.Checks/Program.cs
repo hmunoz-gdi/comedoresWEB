@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Hosting;
 using Npgsql;
+using System.Text.Json;
 var name="comedores_check_"+Guid.NewGuid().ToString("N");
 var cs=$"Host=127.0.0.1;Username=comedores;Database={name}";
 var options=new DbContextOptionsBuilder<AppDb>().UseNpgsql(cs).Options;
@@ -48,6 +49,27 @@ try {
   await report.OnGetAsync();
   Check(report.Rows.Count==1 && report.Rows[0].DailySequence==2,"Reporte filtrado conserva adicional generado en otro comedor");
  }
+ var privateRoot=Path.Combine(Path.GetTempPath(),"comedores_photos_"+Guid.NewGuid().ToString("N"));
+ var env=new DevEnvironment {ContentRootPath=Path.Combine(privateRoot,"src","app")};
+ var local=LocalProfile.LocalDirectory(env);
+ Directory.CreateDirectory(Path.Combine(local,"fotos"));
+ try {
+  var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRn8AAAAASUVORK5CYII=");
+  await File.WriteAllBytesAsync(Path.Combine(local,"fotos","40001.png"),png);
+  var photos=new EmployeePhotos(env);
+  Check(photos.Find("40001")!=null && EmployeePhotos.ContentType(png)=="image/png","Foto PNG local encontrada y tipo detectado");
+  Check(photos.Find("../../40001")==null && photos.Find("99999")==null,"Ruta ajena y foto inexistente no se exponen");
+  Check(EmployeePhotos.ContentType(System.Text.Encoding.UTF8.GetBytes("<script>no</script>"))==null,"Archivo ajeno a imagen rechazado");
+  await using var db=Db();
+  var original=await db.Employees.SingleAsync(x=>x.Number=="40001");
+  await File.WriteAllTextAsync(Path.Combine(local,"empleado.json"),JsonSerializer.Serialize(new LocalProfile.Profile {Number="40001",Name="No sobrescribir",WorkSchedule="Prueba",EnabledForDemo=true}));
+  await LocalProfile.ImportAsync(db,env);
+  Check(original.Name=="Prueba" && await db.Employees.CountAsync(x=>x.Number=="40001")==1,"Perfil local no sobrescribe ni duplica empleados existentes");
+  await db.Database.ExecuteSqlRawAsync("SELECT setval(pg_get_serial_sequence('\"Employees\"','Id'),(SELECT MAX(\"Id\") FROM \"Employees\"))");
+  await File.WriteAllTextAsync(Path.Combine(local,"empleado.json"),JsonSerializer.Serialize(new LocalProfile.Profile {Number="41560",Name="Empleado de prueba",Area="Prueba",Position="Prueba",WorkSchedule="Lunes a viernes 09:00 a 17:00",EnabledForDemo=true}));
+  await LocalProfile.ImportAsync(db,env); await LocalProfile.ImportAsync(db,env);
+  Check(await db.Employees.CountAsync(x=>x.Number=="41560" && x.Active==true)==1,"Perfil local agrega empleado en base existente sin duplicar");
+ } finally {Directory.Delete(privateRoot,true);}
  Console.WriteLine($"{checks} comprobaciones completadas.");
 } finally { await using var db=Db(); await db.Database.EnsureDeletedAsync(); NpgsqlConnection.ClearAllPools(); }
 class DevEnvironment:IWebHostEnvironment {

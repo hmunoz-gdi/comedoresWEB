@@ -11,6 +11,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(o=> {
 builder.Services.ConfigureApplicationCookie(o=> { o.LoginPath="/Login"; o.Cookie.HttpOnly=true; });
 builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
 builder.Services.AddScoped<MealService>();
+builder.Services.AddScoped<EmployeePhotos>();
 var app = builder.Build();
 if (!app.Environment.IsDevelopment()) { app.UseExceptionHandler("/Error"); app.UseHsts(); app.UseHttpsRedirection(); }
 if (app.Environment.IsDevelopment()) {
@@ -26,6 +27,7 @@ if (app.Environment.IsDevelopment()) {
   db.Employees.AddRange(new Employee{Number="40001",Name="Empleado de demostración",Area="Área de prueba",Position="Operativo",WorkSchedule="Pendiente de RH",Active=true},new Employee{Number="49001",Name="Empleado de turno especial (demo)",Area="Área de prueba",Position="Mando",WorkSchedule="Pendiente de RH",Active=true,SpecialShift=true});
   await db.SaveChangesAsync();
  }
+ await LocalProfile.ImportAsync(db,app.Environment);
  var password=app.Configuration["Demo:Password"];
  if(!string.IsNullOrEmpty(password)) {
   var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();

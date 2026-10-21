@@ -1,0 +1,4 @@
+@page
+@model LoginModel
+@{ViewData["Title"]="Acceso";}
+<section class="login"><p class="eyebrow">BIENVENIDO</p><h1>Sistema Integral de Comedores</h1><p>Acceso del personal autorizado</p>@if(Model.Error!=null){<p class="notice" role="alert">@Model.Error</p>}<form method="post"><label asp-for="Username">Usuario</label><input asp-for="Username" autocomplete="username" required/><label asp-for="Password">Contraseña</label><input asp-for="Password" type="password" autocomplete="current-password" required/><button>Iniciar sesión</button></form></section>

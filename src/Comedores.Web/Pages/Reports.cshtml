@@ -1,0 +1,18 @@
+@page
+@model ReportsModel
+@{ViewData["Title"]="Reporte de servicios";}
+<p class="eyebrow">CONSULTA E IMPRESIÓN</p><h1>Reporte del servicio de comedores</h1>
+<form method="get" class="filters"><div><label asp-for="From">Fecha inicial</label><input asp-for="From" type="date"/></div><div><label asp-for="To">Fecha final</label><input asp-for="To" type="date"/></div><div><label asp-for="RoomId">Comedor</label><select asp-for="RoomId"><option value="">GLOBAL</option>@foreach(var room in Model.Rooms){<option value="@room.Id">@room.Name</option>}</select></div><div><label asp-for="Category">Personal</label><select asp-for="Category"><option value="">Todos</option>@foreach(var cat in new[]{"Operativo","Mando","Corporativo"}){<option>@cat</option>}</select></div><button>Consultar</button></form>
+<div asp-validation-summary="All" class="notice"></div>
+<p>Periodo: @Model.From.ToString("dd/MM/yyyy") a @Model.To.ToString("dd/MM/yyyy") · @Model.Rows.Count consumos</p><p>Resumen por empleado, fecha y comedor. Se conservan todas las horas de los servicios repetidos. Sin importes ni calificación de cobro.</p><button type="button" id="print-report" class="secondary">Imprimir / guardar PDF</button>
+<div class="table-wrap"><table><thead><tr><th>Empleado</th><th>Nombre</th><th>Puesto</th><th>Fecha</th><th>Comedor</th><th>DYN · horas</th><th>COM · horas</th><th>CEN · horas</th><th>Adicionales</th><th>Turno especial</th></tr></thead><tbody>
+@foreach(var group in Model.Rows.GroupBy(x=>new {x.EmployeeId,x.ServiceDate,x.DiningRoomId,x.SpecialShift})){
+var first=group.First();
+<tr><td>@first.Employee.Number</td><td>@first.EmployeeName</td><td>@first.Position</td><td>@first.ServiceDate.ToString("dd/MM/yyyy")</td><td>@first.DiningRoom.Name</td>
+@foreach(var type in new[]{"DYN","COM","CEN"}){var meals=group.Where(x=>x.Type==type).OrderBy(x=>x.OccurredAt).ToList();<td><strong>@meals.Count</strong> · @string.Join(", ",meals.Select(x=>MealService.Local(x.OccurredAt).ToString("HH:mm:ss")))</td>}
+<td>@group.Count(x=>x.DailySequence>1)</td><td>@(first.SpecialShift?"Sí":"No")</td></tr>
+}
+</tbody></table></div>
+<details><summary>Ver detalle de cada consumo</summary><div class="table-wrap"><table><thead><tr><th>Empleado</th><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Comedor</th><th>N.º del día</th><th>Tipo</th><th>Turno especial</th></tr></thead><tbody>@foreach(var row in Model.Rows){<tr><td>@row.Employee.Number</td><td>@row.ServiceDate.ToString("dd/MM/yyyy")</td><td>@MealService.Local(row.OccurredAt).ToString("HH:mm:ss")</td><td>@row.Type</td><td>@row.DiningRoom.Name</td><td>@row.DailySequence</td><td>@(row.DailySequence>1?"Adicional":"Primero")</td><td>@(row.SpecialShift?"Sí":"No")</td></tr>}</tbody></table></div></details>
+@if(!Model.Rows.Any() && ModelState.IsValid){<p class="notice">No se encontraron servicios con estos filtros.</p>}
+@section Scripts {<script src="~/js/report.js" asp-append-version="true"></script>}

@@ -25,6 +25,9 @@ try {
   await db.SaveChangesAsync();
  }
  async Task<string> Register(string number,string ip,Guid id,string time="2026-10-19T14:30:00Z") {await using var db=Db();return await Service(db,time).Register(number,ip,"pruebas",id);}
+ foreach(var invalid in new[]{"", "12a34", "123456", "12 34", "-123", "1.2", "１２３", "123\n"})
+  Check((await Register(invalid,"10.0.0.1",Guid.NewGuid()))==EmployeeNumber.ValidationMessage,"Se rechaza número inválido sin registrar consumo");
+ Check(EmployeeNumber.IsValid("1") && EmployeeNumber.IsValid("00123") && EmployeeNumber.IsValid("41560"),"Se aceptan de uno a cinco dígitos y se conservan ceros iniciales");
  var request=Guid.NewGuid();
  await Register("40001","10.0.0.1",request);
  await Register("40001","10.0.0.1",request);

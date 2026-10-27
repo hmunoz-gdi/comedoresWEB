@@ -13,8 +13,9 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
  public async Task OnGetAsync() {
   Room=(await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress)))?.DiningRoom.Name;
   RequestId=Guid.NewGuid();
-  if(string.IsNullOrWhiteSpace(Number)) return;
-  Employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number.Trim());
+  if(string.IsNullOrEmpty(Number) && !Request.Query.ContainsKey("Number")) return;
+  if(!EmployeeNumber.IsValid(Number)) {Message=EmployeeNumber.ValidationMessage;return;}
+  Employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number);
   if(Employee==null) { Message="Empleado no encontrado en el catálogo.";return; }
   HasPhoto=photos.Find(Employee.Number)!=null;
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
@@ -32,8 +33,9 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   return type is null ? NotFound() : File(bytes,type);
  }
  public async Task<IActionResult> OnPostAsync() {
+  if(!EmployeeNumber.IsValid(Number)) {Message=EmployeeNumber.ValidationMessage;return RedirectToPage();}
   if(!ModelState.IsValid) {Message="Solicitud inválida.";return RedirectToPage(new {Number});}
-  Message=await meals.Register(Number.Trim(),meals.ResolveIp(HttpContext.Connection.RemoteIpAddress),User.Identity!.Name!,RequestId);
+  Message=await meals.Register(Number,meals.ResolveIp(HttpContext.Connection.RemoteIpAddress),User.Identity!.Name!,RequestId);
   return RedirectToPage(new {Number});
  }
 }

@@ -8,6 +8,7 @@ public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment en
  public string ResolveIp(IPAddress? address)=>environment.IsDevelopment() && !string.IsNullOrEmpty(config["Demo:TerminalIp"]) ? config["Demo:TerminalIp"]! : address?.MapToIPv4().ToString()??"";
  public async Task<Terminal?> Terminal(string ip)=>await db.Terminals.Include(x=>x.DiningRoom).SingleOrDefaultAsync(x=>x.Ip==ip);
  public async Task<string> Register(string number,string ip,string user,Guid request) {
+  if(!EmployeeNumber.IsValid(number)) return EmployeeNumber.ValidationMessage;
   if(request==Guid.Empty) return "Solicitud inválida; vuelve a consultar al empleado.";
   var employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==number);
   if(employee is null) return "El empleado no está en el catálogo.";

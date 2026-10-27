@@ -1,4 +1,7 @@
 using Comedores.Web;
+using Comedores.Catalogo;
+using Microsoft.AspNetCore.Identity;
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -70,6 +73,61 @@ try {
   await LocalProfile.ImportAsync(db,env); await LocalProfile.ImportAsync(db,env);
   Check(await db.Employees.CountAsync(x=>x.Number=="41560" && x.Active==true)==1,"Perfil local agrega empleado en base existente sin duplicar");
  } finally {Directory.Delete(privateRoot,true);}
+ var catalogRoot=Path.Combine(Path.GetTempPath(),"comedores_catalog_"+Guid.NewGuid().ToString("N"));
+ Directory.CreateDirectory(catalogRoot);
+ try {
+  var csvPath=Path.Combine(catalogRoot,"fixture.csv");
+  const string header="EMP_REG;EMP_Num;EMP_Nombre;EMP_Apaterno;EMP_Amaterno;EMP_Area;EMP_Puesto;EMP_Horario_Laboral;EMP_TurnoEspecial;EMP_STATUS\n";
+  await File.WriteAllTextAsync(csvPath,header+"1;41560;Nombre;Muñoz;Prueba;\"Área; sistemas\";Puesto;Horario;NO;1\n2;49010;Otra;Persona;;Área;Puesto;Horario;SI;0\n3;;;;;;;;NO;1\n4;45001;;;;Área;Puesto;;NO;1\n");
+  var parsed=Catalog.Read(csvPath);
+  Check(parsed.Employees.Count==3 && parsed.Active==2 && parsed.Inactive==1 && parsed.MissingNumber==1 && parsed.MissingName==1 && parsed.Employees[0].Area=="Área; sistemas","CSV maneja acentos, campos citados, bajas y exclusiones explícitas");
+  await File.WriteAllTextAsync(csvPath,header+"1;123;Prueba;;;;;Horario;NO;1\n2;123;Duplicado;;;;;Horario;NO;1\n");
+  try {Catalog.Read(csvPath);Check(false,"CSV duplicado debe rechazarse");}catch(InvalidDataException){Check(true,"CSV duplicado se rechaza antes de tocar la base");}
+  await File.WriteAllTextAsync(csvPath,header+"1;123;Prueba;;;;;Horario;NO;desconocido\n");
+  try {Catalog.Read(csvPath);Check(false,"Estatus desconocido debe rechazarse");}catch(InvalidDataException){Check(true,"Estatus desconocido no se convierte a activo silenciosamente");}
+  int oldMeals,oldEmployees;string protectedBefore;
+  async Task<string> Snapshot(AppDb db)=>JsonSerializer.Serialize(new {Users=await db.Users.AsNoTracking().OrderBy(x=>x.Id).ToListAsync(),Rooms=await db.DiningRooms.AsNoTracking().OrderBy(x=>x.Id).ToListAsync(),Terminals=await db.Terminals.AsNoTracking().OrderBy(x=>x.Id).Select(x=>new{x.Id,x.Ip,x.DiningRoomId}).ToListAsync(),Windows=await db.MealWindows.AsNoTracking().OrderBy(x=>x.Id).ToListAsync()});
+  await using(var db=Db()) {
+   db.Users.Add(new IdentityUser {Id="keep-user",UserName="operador-prueba",NormalizedUserName="OPERADOR-PRUEBA",PasswordHash="fixture-hash"});
+   await db.SaveChangesAsync();oldMeals=await db.Consumptions.CountAsync();oldEmployees=await db.Employees.CountAsync();protectedBefore=await Snapshot(db);
+  }
+  await using(var db=Db()) {
+   try {await CatalogReplacement.ReplaceAsync(db,parsed,()=>throw new IOException("Respaldo de prueba fallido"));Check(false,"Respaldo fallido debe bloquear borrado");}
+   catch(IOException){Check(await db.Consumptions.CountAsync()==oldMeals && await db.Employees.CountAsync()==oldEmployees,"Si falla el respaldo, empleados y consumos permanecen");}
+  }
+  await using(var db=Db()) {
+   var invalid=new Catalog([new Employee{Number="222"},new Employee{Number="222"}],0,0);
+   try {await CatalogReplacement.ReplaceAsync(db,invalid,()=>Task.CompletedTask);Check(false,"Carga fallida debe revertirse");}
+   catch(DbUpdateException){await using var verify=Db();Check(await verify.Consumptions.CountAsync()==oldMeals && await verify.Employees.CountAsync()==oldEmployees,"Fallo después de borrar revierte empleados y consumos");}
+  }
+  var backupPath=Path.Combine(catalogRoot,"backup.dump");
+  await using(var db=Db()) {
+   await CatalogReplacement.ReplaceAsync(db,parsed,()=>Backup.CreateAsync(new NpgsqlConnectionStringBuilder(cs),backupPath));
+   Check(await db.Consumptions.CountAsync()==0 && await db.Employees.CountAsync()==3,"Reinicio elimina consumos e importa catálogo completo");
+   Check(await Snapshot(db)==protectedBefore,"Reinicio conserva cuentas, hash, comedores, terminales y horarios");
+  }
+  var restoreName=name+"_restore";
+  await using(var admin=new NpgsqlConnection("Host=127.0.0.1;Username=comedores;Database=postgres")) {
+   await admin.OpenAsync();await using var command=new NpgsqlCommand($"CREATE DATABASE \"{restoreName}\"",admin);await command.ExecuteNonQueryAsync();
+  }
+  var restoreOptions=new DbContextOptionsBuilder<AppDb>().UseNpgsql($"Host=127.0.0.1;Username=comedores;Database={restoreName}").Options;
+  await using var restored=new AppDb(restoreOptions);
+  try {
+   var binary=Path.Combine(Environment.GetEnvironmentVariable("COMEDORES_PG_BIN")??"","pg_restore");
+   var psi=new ProcessStartInfo(binary){RedirectStandardInput=true,RedirectStandardError=true,RedirectStandardOutput=true};
+   foreach(var argument in new[]{"--exit-on-error","--no-owner","--no-privileges","--host","127.0.0.1","--username","comedores","--dbname",restoreName})psi.ArgumentList.Add(argument);
+   using var process=Process.Start(psi)!;var errors=process.StandardError.ReadToEndAsync();var output=process.StandardOutput.ReadToEndAsync();
+   await using(var source=File.OpenRead(backupPath)){await source.CopyToAsync(process.StandardInput.BaseStream);}process.StandardInput.Close();await process.WaitForExitAsync();await errors;await output;
+   Check(process.ExitCode==0 && await restored.Employees.CountAsync()==oldEmployees && await restored.Consumptions.CountAsync()==oldMeals && await Snapshot(restored)==protectedBefore,"Respaldo se restaura en otra base y recupera datos previos y cuenta");
+  } finally {await restored.Database.EnsureDeletedAsync();}
+  var realCsv=Environment.GetEnvironmentVariable("COMEDORES_TEST_CSV");
+  if(!string.IsNullOrEmpty(realCsv)) {
+   var full=Catalog.Read(realCsv);
+   await using var target=Db();
+   await CatalogReplacement.ReplaceAsync(target,full,()=>Backup.CreateAsync(new NpgsqlConnectionStringBuilder(cs),Path.Combine(catalogRoot,"full-before.dump")));
+   Check(await target.Employees.CountAsync()==full.Employees.Count && await target.Employees.CountAsync(x=>x.Active==true)==full.Active && !await target.Consumptions.AnyAsync() && await Snapshot(target)==protectedBefore,"Carga completa del CSV en base temporal conserva configuración y coincide en totales");
+  }
+ } finally {Directory.Delete(catalogRoot,true);}
  Console.WriteLine($"{checks} comprobaciones completadas.");
 } finally { await using var db=Db(); await db.Database.EnsureDeletedAsync(); NpgsqlConnection.ClearAllPools(); }
 class DevEnvironment:IWebHostEnvironment {

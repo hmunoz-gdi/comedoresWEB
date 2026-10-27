@@ -167,6 +167,12 @@
           "Npgsql": "10.0.0"
         }
       },
+      "comedores.catalogo": {
+        "type": "Project",
+        "dependencies": {
+          "Comedores.Web": "[1.0.0, )"
+        }
+      },
       "comedores.web": {
         "type": "Project",
         "dependencies": {

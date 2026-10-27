@@ -14,3 +14,5 @@ No se han enviado estos documentos a compañeros ni jefatura. El plan es una pro
 Actualización: [Agregar un perfil local y su fotografía](PERFIL-Y-FOTOS.md).
 
 Seguimiento posterior al primer corte: las capturas del usuario ya confirman pantalla de acceso y consulta autenticada en Windows. Falta confirmar con una captura el primer consumo guardado en su equipo. La actualización de perfil/fotos pasó 18 comprobaciones con PostgreSQL y una prueba HTTP de acceso a imágenes; no se ha ejecutado el asistente PowerShell nuevo en Windows.
+
+[Limpiar pruebas y cargar el catálogo de RH con respaldo](REINICIAR-CATALOGO.md).

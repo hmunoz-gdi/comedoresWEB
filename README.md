@@ -74,3 +74,7 @@ En [docs](docs/README.md) están la guía rápida ilustrada para el equipo y la 
 ## Perfil propio y fotografías
 
 Se puede agregar un perfil local y mostrar JPG/PNG sin subir datos a GitHub. Consulta [Perfil y fotos](docs/PERFIL-Y-FOTOS.md). Los perfiles existentes no se sobrescriben y la carpeta `.local` está excluida del repositorio.
+
+## Limpiar pruebas y cargar el catálogo
+
+Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REINICIAR-CATALOGO.md). Conserva cuentas, comedores y horarios. No es un proceso de actualización periódica: vacía consumos de forma intencional.

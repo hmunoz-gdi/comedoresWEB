@@ -11,5 +11,6 @@ if ! command -v dotnet >/dev/null || ! dotnet --list-sdks | awk '{print $1}' | r
  bash "$installer" --version 10.0.402 --install-dir /workspace/.dotnet
 fi
 dotnet restore src/Comedores.Web --locked-mode
+dotnet restore tools/Comedores.Catalogo --locked-mode
 dotnet restore tests/Comedores.Checks --locked-mode
 dotnet build src/Comedores.Web --no-restore

@@ -64,6 +64,10 @@ try {
   await File.WriteAllBytesAsync(Path.Combine(local,"fotos","40001.png"),png);
   var photos=new EmployeePhotos(env);
   Check(photos.Find("40001")!=null && EmployeePhotos.ContentType(png)=="image/png","Foto PNG local encontrada y tipo detectado");
+  var external=Path.Combine(privateRoot,"shared");Directory.CreateDirectory(external);
+  await File.WriteAllBytesAsync(Path.Combine(external,"49001.png"),png);
+  var configured=new EmployeePhotos(env,new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"EmployeePhotos:Directory",external}}).Build());
+  Check(configured.Find("49001")!=null && configured.Find("40001")==null,"Carpeta de fotos configurable usa el directorio indicado");
   Check(photos.Find("../../40001")==null && photos.Find("99999")==null,"Ruta ajena y foto inexistente no se exponen");
   Check(EmployeePhotos.ContentType(System.Text.Encoding.UTF8.GetBytes("<script>no</script>"))==null,"Archivo ajeno a imagen rechazado");
   await using var db=Db();

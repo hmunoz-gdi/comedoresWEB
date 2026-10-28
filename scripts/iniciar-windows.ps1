@@ -1,4 +1,4 @@
-param([switch]$HoraReal)
+param([switch]$HoraReal, [string]$RutaFotos)
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 function Read-PrivateText([string]$Prompt) {
@@ -7,7 +7,7 @@ function Read-PrivateText([string]$Prompt) {
     try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
 }
-$names = @('ConnectionStrings__Comedores','Demo__Password','Demo__TerminalIp','Demo__Now','ASPNETCORE_ENVIRONMENT')
+$names = @('ConnectionStrings__Comedores','Demo__Password','Demo__TerminalIp','Demo__Now','ASPNETCORE_ENVIRONMENT','EmployeePhotos__Directory')
 $previous = @{}
 foreach ($name in $names) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
@@ -22,6 +22,10 @@ try {
     $env:Demo__Password = Read-PrivateText 'Contrasena de la cuenta demo (no se muestra)'
     if ($env:Demo__Password.Length -lt 12 -or $env:Demo__Password -cnotmatch '[A-Z]' -or $env:Demo__Password -cnotmatch '[a-z]' -or $env:Demo__Password -notmatch '[0-9]' -or $env:Demo__Password -notmatch '[^a-zA-Z0-9]') {
         throw 'La contrasena demo no cumple los requisitos indicados.'
+    }
+    if ($RutaFotos) {
+        $env:EmployeePhotos__Directory = $RutaFotos
+        Write-Host 'Se usara la carpeta de fotos indicada con los permisos de su usuario Windows.'
     }
     $env:Demo__TerminalIp = '172.16.66.230'
     $env:ASPNETCORE_ENVIRONMENT = 'Development'

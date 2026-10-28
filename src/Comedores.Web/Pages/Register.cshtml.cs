@@ -21,6 +21,26 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
   TodayCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==Employee.Id && x.ServiceDate==date);
  }
+ public async Task<IActionResult> OnGetLookupAsync(string number) {
+  Response.Headers.CacheControl="no-store";
+  if(!EmployeeNumber.IsValid(number)) return new JsonResult(new {ok=false,message=EmployeeNumber.ValidationMessage});
+  var employee=await db.Employees.AsNoTracking().SingleOrDefaultAsync(x=>x.Number==number);
+  if(employee is null) return new JsonResult(new {ok=false,message="Empleado no encontrado en el catálogo."});
+  var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
+  var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
+  var count=await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date);
+  return new JsonResult(new {ok=true,number=employee.Number,name=employee.Name,area=employee.Area,position=employee.Position,workSchedule=employee.WorkSchedule,specialShift=employee.SpecialShift,todayCount=count,canRegister=employee.Active==true && terminal!=null,message=employee.Active!=true?"Empleado inactivo: consulte a RH.":terminal==null?"Equipo sin comedor autorizado.":"Verifica nombre y fotografía. Pulsa Enter para registrar.",requestId=Guid.NewGuid(),photoUrl=Url.Page("/Register","Photo",new {number})});
+ }
+ public async Task<IActionResult> OnPostQuickAsync() {
+  Response.Headers.CacheControl="no-store";
+  if(!ModelState.IsValid || !EmployeeNumber.IsValid(Number))return new JsonResult(new {ok=false,message=EmployeeNumber.ValidationMessage});
+  var message=await meals.Register(Number,meals.ResolveIp(HttpContext.Connection.RemoteIpAddress),User.Identity!.Name!,RequestId);
+  var ok=message.StartsWith("Servicio registrado.") || message.StartsWith("Esta solicitud ya fue registrada;");
+  var employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number);
+  var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
+  var count=employee==null?0:await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date);
+  return new JsonResult(new {ok,message,todayCount=count});
+ }
  public async Task<IActionResult> OnGetPhotoAsync(string number) {
   Response.Headers.CacheControl="no-store, private";
   Response.Headers["X-Content-Type-Options"]="nosniff";
@@ -29,6 +49,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   byte[] bytes;
   try { bytes=await System.IO.File.ReadAllBytesAsync(path); }
   catch(IOException) { return NotFound(); }
+  catch(UnauthorizedAccessException) {return NotFound();}
   var type=EmployeePhotos.ContentType(bytes);
   return type is null ? NotFound() : File(bytes,type);
  }

@@ -78,3 +78,7 @@ Se puede agregar un perfil local y mostrar JPG/PNG sin subir datos a GitHub. Con
 ## Limpiar pruebas y cargar el catálogo
 
 Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REINICIAR-CATALOGO.md). Conserva cuentas, comedores y horarios. No es un proceso de actualización periódica: vacía consumos de forma intencional.
+
+## Registro ágil y fotos en red
+
+[Guía del registro rápido](docs/REGISTRO-RAPIDO.md): número + Enter para consultar, Enter para confirmar y campo preparado para el siguiente. `iniciar-windows.ps1 -RutaFotos` permite configurar una carpeta de fotos externa sin publicarla.

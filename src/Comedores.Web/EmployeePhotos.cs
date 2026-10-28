@@ -1,12 +1,15 @@
 using System.Text.RegularExpressions;
 namespace Comedores.Web;
-public sealed class EmployeePhotos(IWebHostEnvironment environment) {
+public sealed class EmployeePhotos(IWebHostEnvironment environment, IConfiguration? configuration=null) {
  public string? Find(string number) {
   if(!Regex.IsMatch(number,@"\A[0-9]{1,10}\z")) return null;
-  var folder=Path.Combine(LocalProfile.LocalDirectory(environment),"fotos");
+  var folder=configuration?["EmployeePhotos:Directory"];
+  if(string.IsNullOrWhiteSpace(folder)) folder=Path.Combine(LocalProfile.LocalDirectory(environment),"fotos");
   foreach(var extension in new[]{".jpg",".JPG",".jpeg",".JPEG",".png",".PNG"}) {
    var file=Path.Combine(folder,number+extension);
-   if(File.Exists(file) && new FileInfo(file).Length is >0 and <=5*1024*1024) return file;
+   try {if(File.Exists(file) && new FileInfo(file).Length is >0 and <=5*1024*1024) return file;}
+   catch(IOException) {return null;}
+   catch(UnauthorizedAccessException) {return null;}
   }
   return null;
  }

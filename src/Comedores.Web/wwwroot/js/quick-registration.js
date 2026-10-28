@@ -49,7 +49,6 @@
             const data = await json(await fetch(url, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(15000) }));
             if (!data.ok) { notify(data.message); return; }
             loadedNumber = data.number;
-            el('server-clock').textContent = data.serverClock;
             el('current-service').textContent = data.currentService;
             el('registration-number').value = data.number;
             el('RequestId').value = data.requestId;

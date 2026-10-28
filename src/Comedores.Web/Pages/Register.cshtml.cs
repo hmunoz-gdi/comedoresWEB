@@ -15,12 +15,16 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
  public bool CanRegister {get;set;}
  public bool IsSimulated => meals.IsSimulated;
  public string ServerClock {get;set;}="";
+ public string ServerDate {get;set;}="";
+ public long ServerEpoch {get;set;}
  public string CurrentService {get;set;}="";
  public async Task OnGetAsync() {
   var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
   Room=terminal?.DiningRoom.Name;
   var now=meals.Now;
-  ServerClock=MealService.Local(now).ToString("dd/MM/yyyy HH:mm:ss");
+  ServerClock=MealService.Local(now).ToString("HH:mm:ss");
+  ServerDate=MealService.Local(now).ToString("dd/MM/yyyy");
+  ServerEpoch=new DateTimeOffset(now).ToUnixTimeMilliseconds();
   var period=terminal==null?((MealWindow?)null,(string?)"Equipo sin comedor autorizado."):await meals.PeriodAtAsync(terminal.DiningRoomId,now);
   CurrentService=period.Item1==null?period.Item2!:MealTypes.Name(period.Item1.Type);
   RequestId=Guid.NewGuid();
@@ -32,6 +36,13 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   HasPhoto=photos.Find(Employee.Number)!=null;
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
   TodayCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==Employee.Id && x.ServiceDate==date);
+ }
+ public async Task<IActionResult> OnGetClockAsync() {
+  Response.Headers.CacheControl="no-store, private";
+  var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
+  var windows=terminal==null?new List<MealWindow>():await db.MealWindows.AsNoTracking().Where(x=>x.DiningRoomId==terminal.DiningRoomId).ToListAsync();
+  var now=meals.Now;
+  return new JsonResult(new {utcMilliseconds=new DateTimeOffset(now).ToUnixTimeMilliseconds(),simulated=meals.IsSimulated,roomConfigured=terminal!=null,windows=windows.Select(w=>new {name=MealTypes.Name(w.Type),known=MealTypes.IsKnown(w.Type),startSeconds=w.Start.ToTimeSpan().TotalSeconds,endSeconds=w.End.ToTimeSpan().TotalSeconds})});
  }
  public async Task<IActionResult> OnGetLookupAsync(string number) {
   Response.Headers.CacheControl="no-store";

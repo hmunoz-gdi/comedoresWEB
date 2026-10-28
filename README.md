@@ -86,3 +86,7 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 ## Horarios y confirmación de repetidos
 
 [Reglas y comprobación](docs/HORARIOS-Y-CONFIRMACION.md). El arranque Windows usa hora real por defecto; la simulación requiere `-SimularDesayuno` y se anuncia en pantalla. Al repetir segmento se pide Continuar/Cancelar, contando todos los comedores.
+
+## Reloj visible en línea
+
+[Marquesina y reloj](docs/RELOJ-EN-LINEA.md): segundos y fecha completa, sincronización con el servidor y servicio vigente; el desplazamiento se puede pausar sin detener el reloj.

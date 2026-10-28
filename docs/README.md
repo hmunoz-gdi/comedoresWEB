@@ -20,3 +20,5 @@ Seguimiento posterior al primer corte: las capturas del usuario ya confirman pan
 [Registro rápido con teclado y carpeta compartida de fotografías](REGISTRO-RAPIDO.md).
 
 Actualización de horarios: [Hora real, segmentos y confirmación de repetición](HORARIOS-Y-CONFIRMACION.md). Esta guía y LEEME-WINDOWS describen el arranque actual; los PDF del primer corte conservan sus instrucciones históricas de simulación.
+
+[Marquesina y reloj en línea](RELOJ-EN-LINEA.md).

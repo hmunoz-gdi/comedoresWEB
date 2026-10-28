@@ -4,7 +4,12 @@
 <p class="eyebrow">REGISTRO DE COMENSALES</p>
 <h1>Registrar servicio</h1>
 <p>Comedor: <strong>@(Model.Room??"Equipo sin configurar")</strong></p>
-<p>Servicio al consultar: <strong id="current-service">@Model.CurrentService</strong> · Hora del servidor: <span id="server-clock">@Model.ServerClock</span> (Ciudad de México)</p>
+<section class="server-banner" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
+ <div class="server-banner-top"><span id="clock-status" role="status">Sincronizando con el servidor…</span><button type="button" id="clock-motion" class="secondary" aria-pressed="false">Pausar marquesina</button></div>
+ <div class="server-banner-main"><time id="server-clock" aria-live="off">@Model.ServerClock</time><time id="server-date" aria-live="off">@Model.ServerDate</time></div>
+ <p class="server-banner-service">Servicio vigente: <strong id="current-service">@Model.CurrentService</strong> · Ciudad de México</p>
+ <div class="server-marquee" aria-hidden="true"><span> SISTEMA INTEGRAL DE COMEDORES · FECHA Y HORA DEL SERVIDOR · REGISTRO ÁGIL DE COMENSALES </span></div>
+</section>
 @if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los consumos y reportes guardarán esta hora de prueba.</aside>}
 <p id="registration-message" class="notice" role="status" aria-live="polite" hidden="@(Model.Message==null)">@Model.Message</p>
 <form method="get" class="filters" id="lookup-form" data-lookup-url="@Url.Page("/Register","Lookup")">
@@ -48,6 +53,7 @@
 </dialog>
 <aside>Se valida el horario de servicio del comedor. La validación del horario laboral individual está pendiente de definición con RH.</aside>
 @section Scripts {
+ <script src="~/js/server-clock.js" asp-append-version="true"></script>
  <script src="~/js/employee-number.js" asp-append-version="true"></script>
  <script src="~/js/quick-registration.js" asp-append-version="true"></script>
 }

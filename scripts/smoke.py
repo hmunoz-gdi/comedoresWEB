@@ -1,7 +1,7 @@
 """Comprueba el flujo HTTP contra el servidor de desarrollo con datos ficticios."""
-import html, http.cookiejar, re, urllib.parse, urllib.request
+import html, http.cookiejar, re, urllib.parse, urllib.request, json, os
 from pathlib import Path
-base='http://127.0.0.1:5080'
+base=os.environ.get('TEST_BASE_URL','http://127.0.0.1:5080')
 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 def get(path):
  with opener.open(base+path) as response: return html.unescape(response.read().decode())
@@ -17,10 +17,14 @@ page=get('/Register?Number=40001')
 assert 'Empleado de demostración' in page
 request=re.search(r'id="RequestId"[^>]*value="([^"]+)"',page).group(1)
 fields={'Number':'40001','RequestId':request,'__RequestVerificationToken':token(page)}
-page=post('/Register',fields)
-assert 'Servicio registrado.' in page
-page=post('/Register',fields)
-assert 'no se duplic' in page
+result=json.loads(post('/Register?handler=Quick',fields))
+while result.get('needsConfirmation'):
+ fields['ConfirmedSegmentCount']=result['segmentCount']
+ fields['ConfirmedServiceType']=result['serviceType']
+ result=json.loads(post('/Register?handler=Quick',fields))
+assert result['ok'] and 'Servicio registrado.' in result['message']
+result=json.loads(post('/Register?handler=Quick',fields))
+assert result['ok'] and 'no se duplic' in result['message']
 page=get('/Reports?From=2026-10-19&To=2026-10-19&Category=Operativo')
 assert '<td>40001</td>' in page and 'SUBESTACION' in page
 page=get('/Reports?From=2026-10-19&To=2026-10-19&Category=Mando')

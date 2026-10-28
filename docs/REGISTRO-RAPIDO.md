@@ -21,7 +21,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iniciar-windows.ps1 -RutaF
 
 Sustituir la ruta del ejemplo por la proporcionada por el responsable de infraestructura. El parámetro configura `EmployeePhotos__Directory` solo en ese proceso y restaura su valor anterior al salir. Si no se configura, se usa `.local/fotos` como antes. También puede configurarse esa variable directamente en un servicio; no es necesario cambiar el código.
 
-Introducir las contraseñas habituales, esperar Now listening on y abrir la aplicación. En el navegador presionar Ctrl+F5 para recargar los scripts nuevos.
+Desde la actualización de horarios se usa la hora real por defecto. Para una prueba explícita de desayuno agregar `-SimularDesayuno`; la pantalla muestra HORA SIMULADA. Introducir las contraseñas habituales, esperar Now listening on y abrir la aplicación. En el navegador presionar Ctrl+F5 para recargar los scripts nuevos.
 
 La captura del recurso compartido no demuestra que el proceso del servidor tenga acceso. En Windows local se utiliza la cuenta del proceso que arranca la aplicación. En Ubuntu se necesitará montar el recurso SMB y configurar una ruta Linux, permisos y credenciales gestionadas por infraestructura; no usar directamente una ruta UNC ni incorporar una contraseña en la aplicación.
 
@@ -31,7 +31,7 @@ La nube no puede comprobar el recurso privado de la organización. La validació
 
 1. Escribir el número (1 a 5 dígitos) y pulsar Enter.
 2. Verificar número, nombre y fotografía. Si hay turno especial se muestra en la ficha.
-3. Pulsar Enter otra vez, después de soltar la tecla. No es un registro automático al terminar de escribir.
+3. Pulsar Enter otra vez, después de soltar la tecla. Si ya tiene servicios del mismo segmento y día aparece un cuadro: Cancelar no guarda, Continuar confirma. El foco inicial es Cancelar para prevenir una aceptación accidental; con teclado usar Tab para seleccionar Continuar. No es un registro automático al terminar de escribir.
 4. Esperar la confirmación. El campo queda vacío y con el cursor listo; la ficha anterior se identifica como Último servicio registrado.
 5. Escribir el siguiente número. La ficha previa se oculta para evitar confundir empleados.
 

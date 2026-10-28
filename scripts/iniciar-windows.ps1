@@ -1,4 +1,5 @@
-param([switch]$HoraReal, [string]$RutaFotos)
+param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos)
+if ($HoraReal -and $SimularDesayuno) { throw "Elija hora real o simulacion, no ambas." }
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 function Read-PrivateText([string]$Prompt) {
@@ -30,10 +31,11 @@ try {
     $env:Demo__TerminalIp = '172.16.66.230'
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:Demo__Now = $null
-    if (-not $HoraReal) {
+    if ($SimularDesayuno) {
         $env:Demo__Now = (Get-Date).ToString('yyyy-MM-dd') + 'T08:30:00-06:00'
         Write-Host 'DEMOSTRACION: comedor SUBESTACION, hora simulada 08:30 para probar el desayuno.'
     }
+    if (-not $SimularDesayuno) { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
     Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080 en tu navegador.'
     Write-Host 'Usuario: demo. Para detener la aplicacion presiona Ctrl+C.'
     dotnet run --project src/Comedores.Web --no-launch-profile --urls http://127.0.0.1:5080

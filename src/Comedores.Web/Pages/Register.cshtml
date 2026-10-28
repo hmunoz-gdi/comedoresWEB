@@ -4,6 +4,8 @@
 <p class="eyebrow">REGISTRO DE COMENSALES</p>
 <h1>Registrar servicio</h1>
 <p>Comedor: <strong>@(Model.Room??"Equipo sin configurar")</strong></p>
+<p>Servicio al consultar: <strong id="current-service">@Model.CurrentService</strong> · Hora del servidor: <span id="server-clock">@Model.ServerClock</span> (Ciudad de México)</p>
+@if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los consumos y reportes guardarán esta hora de prueba.</aside>}
 <p id="registration-message" class="notice" role="status" aria-live="polite" hidden="@(Model.Message==null)">@Model.Message</p>
 <form method="get" class="filters" id="lookup-form" data-lookup-url="@Url.Page("/Register","Lookup")">
  <div>
@@ -32,10 +34,18 @@
   <form method="post" id="registration-form" data-quick-url="@Url.Page("/Register","Quick")">
    <input type="hidden" name="Number" id="registration-number" value="@Model.Number"/>
    <input type="hidden" asp-for="RequestId"/>
-   <button id="register-button" disabled="@(Model.Room==null || e?.Active!=true)">Registrar servicio · Enter</button>
+   <button id="register-button" disabled="@(!Model.CanRegister)">Registrar servicio · Enter</button>
   </form>
  </div>
 </section>
+<dialog id="repeat-dialog" aria-labelledby="repeat-title" aria-describedby="repeat-message">
+ <h2 id="repeat-title">Servicio repetido en este horario</h2>
+ <p id="repeat-message"></p>
+ <form method="dialog" class="dialog-actions">
+  <button value="cancel" id="cancel-repeat" class="secondary" autofocus>Cancelar</button>
+  <button value="continue" id="continue-repeat">Continuar</button>
+ </form>
+</dialog>
 <aside>Se valida el horario de servicio del comedor. La validación del horario laboral individual está pendiente de definición con RH.</aside>
 @section Scripts {
  <script src="~/js/employee-number.js" asp-append-version="true"></script>

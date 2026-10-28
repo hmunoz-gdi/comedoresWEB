@@ -2,3 +2,5 @@
 
 .employee-card{display:grid;grid-template-columns:200px 1fr;gap:28px;align-items:start}.employee-photo img{width:200px;height:240px;object-fit:contain;border-radius:10px;background:#edf2ef}.photo-placeholder{width:200px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#edf2ef;border:1px dashed #879c99;border-radius:10px;color:#607370}.photo-placeholder span{font-size:54px}.employee-info{min-width:0}.employee-info h2{margin-top:0}@media(max-width:700px){.employee-card{grid-template-columns:1fr}.employee-info dl{grid-template-columns:1fr}}
 [hidden]{display:none!important}#number-help{display:block;margin-top:8px;color:#526760}#employee-stage{margin-bottom:6px}#registration-message{min-height:54px}#Number{font-size:24px;font-weight:700;letter-spacing:2px}#employee-number{font-weight:700;font-size:22px}
+
+#repeat-dialog{max-width:540px;width:calc(100% - 32px);border:2px solid #ae7e40;border-radius:14px;padding:28px;color:#25343b}#repeat-dialog::backdrop{background:rgb(0 0 0 / .5)}.dialog-actions{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;margin-top:24px}

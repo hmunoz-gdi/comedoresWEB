@@ -24,13 +24,19 @@ try {
   db.Employees.AddRange(new Employee{Id=1,Number="40001",Name="Prueba",Active=true},new Employee{Id=2,Number="49001",Name="Prueba especial",Active=true,SpecialShift=true},new Employee{Id=3,Number="30001",Name="Prueba inactiva",Active=false});
   await db.SaveChangesAsync();
  }
- async Task<string> Register(string number,string ip,Guid id,string time="2026-10-19T14:30:00Z") {await using var db=Db();return await Service(db,time).Register(number,ip,"pruebas",id);}
+ // En estos casos existentes se simula la aceptación explícita del operador cuando aparece un aviso.
+ async Task<string> Register(string number,string ip,Guid id,string time="2026-10-19T14:30:00Z") {
+  await using var db=Db();var service=Service(db,time);var result=await service.RegisterDetailed(number,ip,"pruebas",id);
+  while(result.NeedsConfirmation) result=await service.RegisterDetailed(number,ip,"pruebas",id,result.SegmentCount,result.ServiceType);
+  return result.Message;
+ }
  foreach(var invalid in new[]{"", "12a34", "123456", "12 34", "-123", "1.2", "１２３", "123\n"})
   Check((await Register(invalid,"10.0.0.1",Guid.NewGuid()))==EmployeeNumber.ValidationMessage,"Se rechaza número inválido sin registrar consumo");
  Check(EmployeeNumber.IsValid("1") && EmployeeNumber.IsValid("00123") && EmployeeNumber.IsValid("41560"),"Se aceptan de uno a cinco dígitos y se conservan ceros iniciales");
  var request=Guid.NewGuid();
  await Register("40001","10.0.0.1",request);
  await Register("40001","10.0.0.1",request);
+ Check((await Register("40001","10.0.0.1",request,"2026-10-19T18:00:00Z")).Contains("no se duplicó"),"Un reintento de una solicitud guardada se reconoce aun después de cerrar el horario");
  await Register("40001","10.0.0.2",Guid.NewGuid());
  await using(var db=Db()) {
   var rows=await db.Consumptions.OrderBy(x=>x.DailySequence).ToListAsync();
@@ -46,7 +52,7 @@ try {
  Check((await Register("40001","10.0.0.9",Guid.NewGuid())).Contains("Equipo sin"),"IP desconocida rechazada");
  Check((await Register("30001","10.0.0.1",Guid.NewGuid())).Contains("no tiene habilitado"),"Empleado inactivo rechazado");
  Check((await Register("99999","10.0.0.1",Guid.NewGuid())).Contains("no está"),"Empleado inexistente rechazado");
- Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T18:00:00Z")).Contains("No hay"),"Fuera de horario rechazado");
+ Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T18:00:00Z")).Contains("Fuera del horario"),"Fuera de horario rechazado");
  Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T14:00:00Z")).Contains("Servicio registrado"),"Inicio de horario incluido");
  Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T17:00:00Z")).Contains("Servicio registrado"),"Fin de horario incluido");
  Check(new Employee{Number="39999"}.Category=="Corporativo" && new Employee{Number="40000"}.Category=="Operativo" && new Employee{Number="48999"}.Category=="Operativo" && new Employee{Number="49000"}.Category=="Mando","Fronteras de categorías confirmadas");
@@ -80,6 +86,75 @@ try {
   await LocalProfile.ImportAsync(db,env); await LocalProfile.ImportAsync(db,env);
   Check(await db.Employees.CountAsync(x=>x.Number=="41560" && x.Active==true)==1,"Perfil local agrega empleado en base existente sin duplicar");
  } finally {Directory.Delete(privateRoot,true);}
+ await using(var db=Db()) {
+  db.DiningRooms.Add(new DiningRoom {Id=3,Name="CREI"});
+  db.Terminals.Add(new Terminal {Ip="10.0.0.3",DiningRoomId=3});
+  foreach(var room in new[]{1,2,3}) {
+   if(room==3)db.MealWindows.Add(new MealWindow{DiningRoomId=room,Type="DYN",Start=new(8,0),End=new(11,0)});
+   db.MealWindows.AddRange(new MealWindow{DiningRoomId=room,Type="COM",Start=new(14,0),End=new(18,0)},new MealWindow{DiningRoomId=room,Type="CEN",Start=room==3?new(19,0):new(20,30),End=new(22,0)});
+  }
+  await db.SaveChangesAsync();
+ }
+ DateTime UtcAt(TimeOnly time,int day=21)=>new DateTimeOffset(2026,10,day,time.Hour,time.Minute,time.Second,TimeSpan.FromHours(-6)).UtcDateTime;
+ foreach(var room in new[]{1,2,3}) {
+  await using var db=Db();
+  foreach(var window in await db.MealWindows.Where(x=>x.DiningRoomId==room).ToListAsync()) {
+   var midpoint=window.Start.Add((window.End-window.Start)/2);
+   bool correct=true;
+   foreach(var localTime in new[]{window.Start,midpoint,window.End}) {
+    var utc=UtcAt(localTime);var id=Guid.NewGuid();
+    var message=await Register("40001",$"10.0.0.{room}",id,utc.ToString("O"));
+    var saved=await db.Consumptions.AsNoTracking().SingleOrDefaultAsync(x=>x.RequestId==id);
+    correct &= message.Contains(MealTypes.Name(window.Type)) && message.Contains(localTime.ToString("HH:mm:ss")) && saved!=null && saved.Type==window.Type && saved.OccurredAt==utc && saved.ServiceDate==new DateOnly(2026,10,21);
+   }
+   Check(correct,$"Comedor {room}, {window.Type}: inicio, interior y fin guardan tipo y hora exactos");
+   var before=await db.Consumptions.CountAsync();
+   var early=await Register("40001",$"10.0.0.{room}",Guid.NewGuid(),UtcAt(window.Start.Add(TimeSpan.FromSeconds(-1))).ToString("O"));
+   var late=await Register("40001",$"10.0.0.{room}",Guid.NewGuid(),UtcAt(window.End.Add(TimeSpan.FromSeconds(1))).ToString("O"));
+   Check(early.Contains("Fuera del horario") && late.Contains("Fuera del horario") && await db.Consumptions.CountAsync()==before,$"Comedor {room}, {window.Type}: fuera de rango no guarda consumos");
+  }
+ }
+ await using(var db=Db()) {
+  var report=new Comedores.Web.Pages.ReportsModel(db,Service(db)){From=new(2026,10,21),To=new(2026,10,21)};
+  await report.OnGetAsync();
+  Check(report.Rows.Count==27 && new[]{"DYN","COM","CEN"}.All(type=>report.Rows.Count(x=>x.Type==type)==9),"Reporte conserva tipos y las 27 horas registradas en tres comedores");
+  var config=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"Demo:Now",UtcAt(new(10,0),22).ToString("O")}}).Build();
+  var changing=new MealService(db,config,new DevEnvironment());
+  var consulted=await changing.PeriodAtAsync(1,changing.Now);
+  config["Demo:Now"]=UtcAt(new(14,10),22).ToString("O");
+  var id=Guid.NewGuid();await changing.Register("40001","10.0.0.1","pruebas",id);
+  var saved=await db.Consumptions.SingleAsync(x=>x.RequestId==id);
+  Check(consulted.Window?.Type=="DYN" && saved.Type=="COM" && saved.OccurredAt==UtcAt(new(14,10),22),"Se clasifica al confirmar, aunque se haya consultado al empleado en otro horario");
+  var real=new MealService(db,new ConfigurationBuilder().Build(),new DevEnvironment());
+  Check(!real.IsSimulated && Math.Abs((real.Now-DateTime.UtcNow).TotalSeconds)<5,"Sin simulación explícita se utiliza hora real UTC");
+  var overlap=new MealWindow {DiningRoomId=3,Type="COM",Start=new(8,30),End=new(9,30)};db.MealWindows.Add(overlap);await db.SaveChangesAsync();
+  var overlapMessage=await Register("40001","10.0.0.3",Guid.NewGuid(),UtcAt(new(9,0)).ToString("O"));
+  Check(overlapMessage.Contains("superponen"),"Horarios superpuestos no clasifican arbitrariamente el consumo");
+  db.MealWindows.Remove(overlap);await db.SaveChangesAsync();
+ }
+ await using(var db=Db()) {
+  var morning=Service(db,UtcAt(new(9,0),23).ToString("O"));
+  var first=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",Guid.NewGuid());
+  Check(first.Ok && !first.NeedsConfirmation,"Primer servicio del segmento no requiere aviso de repetición");
+  var request2=Guid.NewGuid();
+  var warning=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",request2);
+  Check(warning.NeedsConfirmation && warning.SegmentCount==1 && warning.ServiceType=="DYN" && !await db.Consumptions.AnyAsync(x=>x.RequestId==request2),"Aviso informa un desayuno previo; cancelar no guarda otro consumo");
+  var accepted=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",request2,warning.SegmentCount,warning.ServiceType);
+  Check(accepted.Ok && await db.Consumptions.AnyAsync(x=>x.RequestId==request2 && x.DailySequence==2),"Continuar guarda el segundo servicio y conserva el consecutivo diario");
+  var staleId=Guid.NewGuid();
+  var stale=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",staleId,1,"DYN");
+  var wrongType=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",staleId,2,"COM");
+  Check(stale.NeedsConfirmation && stale.SegmentCount==2 && wrongType.NeedsConfirmation && !await db.Consumptions.AnyAsync(x=>x.RequestId==staleId),"Confirmación antigua o de otro segmento vuelve a pedir autorización sin guardar");
+  var elsewhere=await morning.RegisterDetailed("40001","10.0.0.2","pruebas",Guid.NewGuid());
+  Check(elsewhere.NeedsConfirmation && elsewhere.SegmentCount==2,"Aviso cuenta servicios del segmento en todos los comedores");
+  var replay=await morning.RegisterDetailed("40001","10.0.0.1","pruebas",request2);
+  Check(replay.Ok && !replay.NeedsConfirmation,"Reintentar la misma solicitud guardada no pide confirmación ni duplica");
+  var lunch=await Service(db,UtcAt(new(15,0),23).ToString("O")).RegisterDetailed("40001","10.0.0.1","pruebas",Guid.NewGuid());
+  Check(lunch.Ok && !lunch.NeedsConfirmation,"Primera comida tras dos desayunos es otro segmento y no avisa repetición");
+  await morning.RegisterDetailed("49001","10.0.0.1","pruebas",Guid.NewGuid());
+  var special=await morning.RegisterDetailed("49001","10.0.0.1","pruebas",Guid.NewGuid());
+  Check(special.NeedsConfirmation && special.SegmentCount==1,"Turno especial también recibe aviso al repetir segmento, sin calcular cobros");
+ }
  var catalogRoot=Path.Combine(Path.GetTempPath(),"comedores_catalog_"+Guid.NewGuid().ToString("N"));
  Directory.CreateDirectory(catalogRoot);
  try {

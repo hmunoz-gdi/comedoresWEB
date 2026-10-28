@@ -49,6 +49,8 @@
             const data = await json(await fetch(url, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(15000) }));
             if (!data.ok) { notify(data.message); return; }
             loadedNumber = data.number;
+            el('server-clock').textContent = data.serverClock;
+            el('current-service').textContent = data.currentService;
             el('registration-number').value = data.number;
             el('RequestId').value = data.requestId;
             for (const [id, text] of Object.entries({
@@ -63,15 +65,33 @@
         } catch (error) { notify(explain(error)); }
         finally { setBusy(false); focus(); }
     });
+    function confirmRepeat(data) {
+        const dialog = el('repeat-dialog');
+        el('repeat-message').textContent = data.message;
+        dialog.returnValue = 'cancel';
+        return new Promise(resolve => {
+            dialog.addEventListener('close', () => resolve(dialog.returnValue === 'continue'), { once: true });
+            dialog.showModal();
+            el('cancel-repeat').focus();
+        });
+    }
     registration.addEventListener('submit', async event => {
         event.preventDefault();
         if (busy || !ready || number.value !== loadedNumber) return;
         const payload = new FormData(registration); // Mismo RequestId al reintentar tras error de red.
         setBusy(true); notify('Registrando servicio…');
         try {
-            const data = await json(await fetch(registration.dataset.quickUrl, {
+            const send = () => fetch(registration.dataset.quickUrl, {
                 method: 'POST', body: payload, credentials: 'same-origin', signal: AbortSignal.timeout(15000), headers: { Accept: 'application/json' }
-            }));
+            }).then(json);
+            let data = await send();
+            while (data.needsConfirmation) {
+                if (!await confirmRepeat(data)) { notify('Registro cancelado. No se guardó otro servicio.'); return; }
+                payload.set('ConfirmedSegmentCount', String(data.segmentCount));
+                payload.set('ConfirmedServiceType', data.serviceType);
+                notify('Registrando servicio confirmado…');
+                data = await send();
+            }
             notify(data.message);
             if (data.ok) {
                 ready = false; loadedNumber = ''; number.value = '';

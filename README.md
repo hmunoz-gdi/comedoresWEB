@@ -82,3 +82,7 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 ## Registro ágil y fotos en red
 
 [Guía del registro rápido](docs/REGISTRO-RAPIDO.md): número + Enter para consultar, Enter para confirmar y campo preparado para el siguiente. `iniciar-windows.ps1 -RutaFotos` permite configurar una carpeta de fotos externa sin publicarla.
+
+## Horarios y confirmación de repetidos
+
+[Reglas y comprobación](docs/HORARIOS-Y-CONFIRMACION.md). El arranque Windows usa hora real por defecto; la simulación requiere `-SimularDesayuno` y se anuncia en pantalla. Al repetir segmento se pide Continuar/Cancelar, contando todos los comedores.

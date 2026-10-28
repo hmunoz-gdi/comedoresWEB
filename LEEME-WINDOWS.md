@@ -17,8 +17,10 @@ Requisitos ya preparados: .NET SDK 10 y PostgreSQL 17 con la base `comedores` va
 7. Esperar al mensaje `Now listening on`. Abrir el navegador en `http://localhost:5080`. Esta dirección es de TU computadora con la aplicación en ejecución, no una dirección del entorno de nube.
 8. Entrar con usuario `demo` y su contraseña. En Registrar servicio consultar `40001` o `49001`. Son empleados ficticios. Repetir el registro para ver el consecutivo y revisar Reportes.
 
-Mantener la terminal abierta mientras usas la aplicación; Ctrl+C la detiene. El arranque simula SUBESTACION y las 08:30 del día local para permitir pruebas aunque estés fuera de horario. Los consumos son ficticios pero se guardan en tu base. Para usar la hora real agregar `-HoraReal` al comando del paso 3.
+Mantener la terminal abierta mientras usas la aplicación; Ctrl+C la detiene. El arranque simula la IP de SUBESTACION, pero usa la hora real del servidor convertida a Ciudad de México. Para una prueba explícita de desayuno, agregar `-SimularDesayuno` al comando del paso 3: fija las 08:30 y muestra un aviso visible. Esos consumos se guardan con la hora simulada. `-HoraReal` se conserva como opción compatible, aunque ya es el comportamiento predeterminado.
 
 La aplicación crea sus tablas y empleados ficticios en la base vacía. No ejecutar `comedores2026.sql`: es un script del sistema anterior para SQL Server. No importar empleados reales para esta demostración. La lista de funciones pendientes está en README.md.
 
 Si hay un error, compartir el mensaje ocultando cualquier dato sensible. Nunca compartir contraseñas ni una cadena de conexión que las contenga.
+
+Al repetir un tipo de servicio en el mismo día aparece un cuadro con el número de consumos previos. Cancelar no guarda otro; Continuar confirma el registro. Consulta [Horarios y confirmaciones](docs/HORARIOS-Y-CONFIRMACION.md).

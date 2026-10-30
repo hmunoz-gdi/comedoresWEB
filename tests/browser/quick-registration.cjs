@@ -35,7 +35,7 @@ const fs=require('node:fs'),path=require('node:path');
   await page.waitForFunction(()=>document.getElementById('employee-photo').naturalWidth>0);
   await page.keyboard.press('Enter');await finish();
   assert.equal(await page.locator('#Number').inputValue(),'');assert.equal(await page.evaluate(()=>document.activeElement.id),'Number');
-  assert((await message.textContent()).includes('Desayuno')&&(await message.textContent()).includes('08:30:00'));
+  assert((await message.textContent()).includes('Desayuno')&&(await message.textContent()).includes(process.env.TEST_EXPECTED_TIME||'08:30:00'));
   assert.equal(await count(),before+1);
   phase='cancelar repetición';
   await consult(page,'40001');await page.keyboard.press('Enter');await page.locator('#repeat-dialog').waitFor({state:'visible'});

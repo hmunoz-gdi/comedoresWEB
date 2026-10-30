@@ -1,24 +1,25 @@
 @page
 @model RegisterModel
-@{ViewData["Title"]="Registrar servicio"; var e=Model.Employee;}
-<p class="eyebrow">REGISTRO DE COMENSALES</p>
+@{ViewData["Title"]="Registrar servicio"; ViewData["BodyClass"]="registration-page"; var e=Model.Employee;}
+<div class="registration-top"><div class="registration-heading"><p class="eyebrow">REGISTRO DE COMENSALES</p>
 <h1>Registrar servicio</h1>
-<p>Comedor: <strong>@(Model.Room??"Equipo sin configurar")</strong></p>
+<p>Comedor: <strong>@(Model.Room??"Equipo sin configurar")</strong></p></div>
 <section class="server-banner" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
  <div class="server-banner-top"><span id="clock-status" role="status">Sincronizando con el servidor…</span><button type="button" id="clock-motion" class="secondary" aria-pressed="false">Pausar marquesina</button></div>
  <div class="server-banner-main"><time id="server-clock" aria-live="off">@Model.ServerClock</time><time id="server-date" aria-live="off">@Model.ServerDate</time></div>
  <p class="server-banner-service">Servicio vigente: <strong id="current-service">@Model.CurrentService</strong> · Ciudad de México</p>
  <div class="server-marquee" aria-hidden="true"><span> SISTEMA INTEGRAL DE COMEDORES · FECHA Y HORA DEL SERVIDOR · REGISTRO ÁGIL DE COMENSALES </span></div>
-</section>
+</section></div>
 @if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los consumos y reportes guardarán esta hora de prueba.</aside>}
 <p id="registration-message" class="notice" role="status" aria-live="polite" hidden="@(Model.Message==null)">@Model.Message</p>
-<form method="get" class="filters" id="lookup-form" data-lookup-url="@Url.Page("/Register","Lookup")">
+<div class="registration-workspace"><form method="get" class="filters capture-box" id="lookup-form" data-lookup-url="@Url.Page("/Register","Lookup")">
  <div>
   <label for="Number">Número de empleado</label>
   <input id="Number" name="Number" value="@Model.Number" type="text" inputmode="numeric" pattern="[0-9]{1,5}" maxlength="5" title="Solo números, máximo 5 dígitos" aria-describedby="number-help" required autofocus autocomplete="off"/>
   <small id="number-help">Número + Enter: consultar · Enter otra vez: registrar · Esc: siguiente comensal.</small>
  </div>
  <button id="lookup-button">Consultar</button>
+ <details class="registration-note"><summary>Reglas del servicio</summary><p>Se aplica el horario del comedor. Si repites desayuno, comida o cena se solicita confirmación antes de guardar.</p></details>
 </form>
 <section class="panel employee-card" id="employee-card" data-number="@e?.Number" hidden="@(e==null)">
  <div class="employee-photo">
@@ -29,12 +30,12 @@
   <p id="employee-stage" class="eyebrow">COMENSAL CONSULTADO</p>
   <h2 id="employee-name">@(string.IsNullOrWhiteSpace(e?.Name)?"Nombre no disponible en el catálogo":e.Name)</h2>
   <dl>
-   <dt>Número</dt><dd id="employee-number">@e?.Number</dd>
-   <dt>Área</dt><dd id="employee-area">@e?.Area</dd>
-   <dt>Puesto</dt><dd id="employee-position">@e?.Position</dd>
-   <dt>Horario laboral</dt><dd id="employee-schedule">@e?.WorkSchedule</dd>
-   <dt>Turno especial</dt><dd id="employee-special">@(e?.SpecialShift==true?"Sí":"No")</dd>
-   <dt>Servicios hoy, todos los comedores</dt><dd id="employee-count">@Model.TodayCount</dd>
+   <div><dt>Número</dt><dd id="employee-number">@e?.Number</dd></div>
+   <div class="detail-wide"><dt>Área</dt><dd id="employee-area">@e?.Area</dd></div>
+   <div class="detail-wide"><dt>Puesto</dt><dd id="employee-position">@e?.Position</dd></div>
+   <div class="detail-wide"><dt>Horario laboral</dt><dd id="employee-schedule">@e?.WorkSchedule</dd></div>
+   <div><dt>Turno especial</dt><dd id="employee-special">@(e?.SpecialShift==true?"Sí":"No")</dd></div>
+   <div><dt>Servicios hoy · todos los comedores</dt><dd id="employee-count">@Model.TodayCount</dd></div>
   </dl>
   <form method="post" id="registration-form" data-quick-url="@Url.Page("/Register","Quick")">
    <input type="hidden" name="Number" id="registration-number" value="@Model.Number"/>
@@ -42,8 +43,13 @@
    <button id="register-button" disabled="@(!Model.CanRegister)">Registrar servicio · Enter</button>
   </form>
  </div>
-</section>
-<dialog id="repeat-dialog" aria-labelledby="repeat-title" aria-describedby="repeat-message">
+</section></div>
+<dialog id="hours-dialog" class="registration-dialog" data-show="@((e?.Active==true && Model.OutsideHours)?"true":"false")" aria-labelledby="hours-title" aria-describedby="hours-message">
+ <h2 id="hours-title">Fuera de horario</h2>
+ <p id="hours-message">Fuera del horario de servicio de este comedor.</p>
+ <form method="dialog" class="dialog-actions"><button id="hours-accept" autofocus>Entendido</button></form>
+</dialog>
+<dialog id="repeat-dialog" class="registration-dialog" aria-labelledby="repeat-title" aria-describedby="repeat-message">
  <h2 id="repeat-title">Servicio repetido en este horario</h2>
  <p id="repeat-message"></p>
  <form method="dialog" class="dialog-actions">
@@ -51,7 +57,6 @@
   <button value="continue" id="continue-repeat">Continuar</button>
  </form>
 </dialog>
-<aside>Se valida el horario de servicio del comedor. La validación del horario laboral individual está pendiente de definición con RH.</aside>
 @section Scripts {
  <script src="~/js/server-clock.js" asp-append-version="true"></script>
  <script src="~/js/employee-number.js" asp-append-version="true"></script>

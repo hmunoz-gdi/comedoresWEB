@@ -53,6 +53,10 @@ try {
  Check((await Register("30001","10.0.0.1",Guid.NewGuid())).Contains("no tiene habilitado"),"Empleado inactivo rechazado");
  Check((await Register("99999","10.0.0.1",Guid.NewGuid())).Contains("no está"),"Empleado inexistente rechazado");
  Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T18:00:00Z")).Contains("Fuera del horario"),"Fuera de horario rechazado");
+ await using(var db=Db()) {
+  var outside=await Service(db,"2026-10-19T18:00:00Z").RegisterDetailed("40001","10.0.0.1","pruebas",Guid.NewGuid());
+  Check(outside.OutsideHours && !outside.Ok && !outside.NeedsConfirmation,"Fuera de horario devuelve una causa explícita para el diálogo");
+ }
  Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T14:00:00Z")).Contains("Servicio registrado"),"Inicio de horario incluido");
  Check((await Register("40001","10.0.0.1",Guid.NewGuid(),"2026-10-19T17:00:00Z")).Contains("Servicio registrado"),"Fin de horario incluido");
  Check(new Employee{Number="39999"}.Category=="Corporativo" && new Employee{Number="40000"}.Category=="Operativo" && new Employee{Number="48999"}.Category=="Operativo" && new Employee{Number="49000"}.Category=="Mando","Fronteras de categorías confirmadas");

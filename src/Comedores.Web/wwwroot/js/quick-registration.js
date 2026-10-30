@@ -37,6 +37,17 @@
         if (!response.ok) throw new Error('No se pudo completar la solicitud. Revisa la conexión y vuelve a intentar.');
         return response.json();
     }
+    function warnOutsideHours(text) {
+        const dialog = el('hours-dialog');
+        el('hours-message').textContent = text;
+        message.hidden = true;
+        ready = false; button.disabled = true;
+        return new Promise(resolve => {
+            dialog.addEventListener('close', () => { resolve(); }, { once: true });
+            dialog.showModal();
+            el('hours-accept').focus();
+        });
+    }
     lookup.addEventListener('submit', async event => {
         event.preventDefault();
         if (busy) return;
@@ -59,8 +70,10 @@
                 'employee-special': data.specialShift ? 'Sí' : 'No', 'employee-count': data.todayCount
             })) el(id).textContent = text;
             el('employee-stage').textContent = 'COMENSAL CONSULTADO';
-            card.hidden = false; ready = data.canRegister; notify(data.message);
+            card.hidden = false; ready = data.canRegister;
             showPhoto(data.photoUrl, data.name);
+            if (data.outsideHours) { await warnOutsideHours(data.message); number.select(); }
+            else notify(data.message);
         } catch (error) { notify(explain(error)); }
         finally { setBusy(false); focus(); }
     });
@@ -91,7 +104,8 @@
                 notify('Registrando servicio confirmado…');
                 data = await send();
             }
-            notify(data.message);
+            if (data.outsideHours) { await warnOutsideHours(data.message); number.select(); }
+            else notify(data.message);
             if (data.ok) {
                 ready = false; loadedNumber = ''; number.value = '';
                 el('registration-number').value = ''; el('RequestId').value = '';
@@ -122,4 +136,7 @@
     document.addEventListener('keyup', event => { if (event.key === 'Enter') enterHeld = false; });
     window.addEventListener('blur', () => { enterHeld = false; });
     focus();
+    if (el('hours-dialog').dataset.show === 'true') {
+        warnOutsideHours(el('hours-message').textContent).then(() => { focus(); number.select(); });
+    }
 })();

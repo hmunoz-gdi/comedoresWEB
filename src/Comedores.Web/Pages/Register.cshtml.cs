@@ -13,6 +13,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
  public int TodayCount {get;set;}
  public bool HasPhoto {get;set;}
  public bool CanRegister {get;set;}
+ public bool OutsideHours {get;set;}
  public bool IsSimulated => meals.IsSimulated;
  public string ServerClock {get;set;}="";
  public string ServerDate {get;set;}="";
@@ -25,7 +26,8 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   ServerClock=MealService.Local(now).ToString("HH:mm:ss");
   ServerDate=MealService.Local(now).ToString("dd/MM/yyyy");
   ServerEpoch=new DateTimeOffset(now).ToUnixTimeMilliseconds();
-  var period=terminal==null?((MealWindow?)null,(string?)"Equipo sin comedor autorizado."):await meals.PeriodAtAsync(terminal.DiningRoomId,now);
+  var period=terminal==null?((MealWindow?)null,(string?)"Equipo sin comedor autorizado.",false):await meals.PeriodAtAsync(terminal.DiningRoomId,now);
+  OutsideHours=period.Item3;
   CurrentService=period.Item1==null?period.Item2!:MealTypes.Name(period.Item1.Type);
   RequestId=Guid.NewGuid();
   if(string.IsNullOrEmpty(Number) && !Request.Query.ContainsKey("Number")) return;
@@ -52,9 +54,9 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
   var now=meals.Now;
   var date=DateOnly.FromDateTime(MealService.Local(now));
-  var period=terminal==null?((MealWindow?)null,(string?)"Equipo sin comedor autorizado."):await meals.PeriodAtAsync(terminal.DiningRoomId,now);
+  var period=terminal==null?((MealWindow?)null,(string?)"Equipo sin comedor autorizado.",false):await meals.PeriodAtAsync(terminal.DiningRoomId,now);
   var count=await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date);
-  return new JsonResult(new {ok=true,number=employee.Number,name=employee.Name,area=employee.Area,position=employee.Position,workSchedule=employee.WorkSchedule,specialShift=employee.SpecialShift,todayCount=count,canRegister=employee.Active==true && period.Item1!=null,serverClock=MealService.Local(now).ToString("dd/MM/yyyy HH:mm:ss"),currentService=period.Item1==null?period.Item2!:MealTypes.Name(period.Item1.Type),message=employee.Active!=true?"Empleado inactivo: consulte a RH.":period.Item1==null?period.Item2!:"Verifica nombre y fotografía. Pulsa Enter para registrar.",requestId=Guid.NewGuid(),photoUrl=Url.Page("/Register","Photo",new {number})});
+  return new JsonResult(new {ok=true,number=employee.Number,name=employee.Name,area=employee.Area,position=employee.Position,workSchedule=employee.WorkSchedule,specialShift=employee.SpecialShift,todayCount=count,canRegister=employee.Active==true && period.Item1!=null,outsideHours=period.Item3 && employee.Active==true,serverClock=MealService.Local(now).ToString("dd/MM/yyyy HH:mm:ss"),currentService=period.Item1==null?period.Item2!:MealTypes.Name(period.Item1.Type),message=employee.Active!=true?"Empleado inactivo: consulte a RH.":period.Item1==null?period.Item2!:"Verifica nombre y fotografía. Pulsa Enter para registrar.",requestId=Guid.NewGuid(),photoUrl=Url.Page("/Register","Photo",new {number})});
  }
  public async Task<IActionResult> OnPostQuickAsync() {
   Response.Headers.CacheControl="no-store";
@@ -63,7 +65,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   var employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number);
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
   var count=employee==null?0:await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date);
-  return new JsonResult(new {ok=result.Ok,message=result.Message,needsConfirmation=result.NeedsConfirmation,segmentCount=result.SegmentCount,serviceType=result.ServiceType,todayCount=count});
+  return new JsonResult(new {ok=result.Ok,message=result.Message,needsConfirmation=result.NeedsConfirmation,segmentCount=result.SegmentCount,serviceType=result.ServiceType,outsideHours=result.OutsideHours,todayCount=count});
  }
  public async Task<IActionResult> OnGetPhotoAsync(string number) {
   Response.Headers.CacheControl="no-store, private";

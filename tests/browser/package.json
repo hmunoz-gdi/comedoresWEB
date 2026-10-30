@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "test": "node quick-registration.cjs",
-    "test:clock": "node server-clock.cjs"
+    "test:clock": "node server-clock.cjs",
+    "test:layout": "node registration-layout.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

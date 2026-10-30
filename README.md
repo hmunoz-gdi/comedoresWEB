@@ -90,3 +90,7 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 ## Reloj visible en línea
 
 [Marquesina y reloj](docs/RELOJ-EN-LINEA.md): segundos y fecha completa, sincronización con el servidor y servicio vigente; el desplazamiento se puede pausar sin detener el reloj.
+
+## Vista horizontal
+
+[Pantalla compacta y diálogo fuera de horario](docs/PANTALLA-HORIZONTAL.md). Captura a la izquierda, foto/datos a la derecha y reloj compacto; el rechazo por horario se presenta en un cuadro que devuelve el foco al número.

@@ -94,3 +94,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 ## Vista horizontal
 
 [Pantalla compacta y diálogo fuera de horario](docs/PANTALLA-HORIZONTAL.md). Captura a la izquierda, foto/datos a la derecha y reloj compacto; el rechazo por horario se presenta en un cuadro que devuelve el foco al número.
+
+- [Empleados y fotografía con webcam](docs/EMPLEADOS-Y-CAMARA.md)

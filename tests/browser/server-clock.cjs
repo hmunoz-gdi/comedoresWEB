@@ -11,7 +11,7 @@ const fs=require('node:fs'),path=require('node:path');
  const waitStatus=text=>page.waitForFunction(text=>document.getElementById('clock-status').textContent.includes(text),text);
  const refocus=()=>page.evaluate(()=>window.dispatchEvent(new Event('focus')));
  async function login(target,url){
-  await target.goto(url+'/Login');await target.locator('#Username').fill('demo');await target.locator('#Password').fill(password);
+  await target.goto(url+'/Login');await target.locator('#Username').fill(process.env.TEST_USERNAME||'demo');await target.locator('#Password').fill(password);
   await Promise.all([target.waitForURL(url+'/'),target.getByRole('button',{name:'Iniciar sesión'}).click()]);
   await target.goto(url+'/Register');
  }

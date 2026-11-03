@@ -51,7 +51,7 @@ La webcam necesita un contexto seguro: **localhost en el propio equipo** o **HTT
 
 Si está ocupada, cierra otros programas que usen la cámara. Al salir del formulario se apagan sus pistas. No se solicita audio.
 
-Como las demás páginas del prototipo, este módulo requiere iniciar sesión y sus formularios usan protección antifalsificación. Actualmente todos los usuarios autenticados pueden administrar empleados; la separación por roles sigue pendiente antes del uso operativo. El servidor valida números, campos obligatorios, longitudes, duplicados y tamaño/cabecera JPEG, y genera el nombre del archivo sin usar el nombre aportado por el navegador.
+Como las demás páginas del prototipo, este módulo requiere iniciar sesión y sus formularios usan protección antifalsificación. Sólo el perfil Catálogo (y la cuenta inicial de administración que lo incluye) puede administrar empleados y fotografías. Consulta `PERFILES-Y-USUARIOS.md` para asignar cuentas. El servidor valida números, campos obligatorios, longitudes, duplicados y tamaño/cabecera JPEG, y genera el nombre del archivo sin usar el nombre aportado por el navegador.
 
 ## Actualizar y probar
 

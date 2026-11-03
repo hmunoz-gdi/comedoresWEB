@@ -5,7 +5,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  const context=await browser.newContext(),page=await context.newPage();
  const inside=process.env.TEST_BASE_URL||'http://127.0.0.1:5082',outside=process.env.TEST_OUTSIDE_URL||'http://127.0.0.1:5083';
  const password=process.env.TEST_DEMO_PASSWORD||fs.readFileSync(path.join(__dirname,'../../.local/demo-password'),'utf8').trim();
- async function login(url,target=page){await target.goto(url+'/Login');await target.locator('#Username').fill('demo');await target.locator('#Password').fill(password);await Promise.all([target.waitForURL(url+'/'),target.getByRole('button',{name:'Iniciar sesión'}).click()]);}
+ async function login(url,target=page){await target.goto(url+'/Login');await target.locator('#Username').fill(process.env.TEST_USERNAME||'demo');await target.locator('#Password').fill(password);await Promise.all([target.waitForURL(url+'/'),target.getByRole('button',{name:'Iniciar sesión'}).click()]);}
  try {
   await login(inside);await page.goto(inside+'/Register');await page.locator('#Number').fill('40001');await page.keyboard.press('Enter');
   await page.waitForFunction(()=>!document.getElementById('register-button').disabled);

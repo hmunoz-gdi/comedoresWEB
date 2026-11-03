@@ -22,7 +22,7 @@ const fs=require('node:fs'),path=require('node:path');
  };
  try {
   const anon=await page.request.get(base+'/Register?handler=Lookup&number=40001');assert(!(anon.headers()['content-type']||'').includes('application/json'));
-  await page.goto(base+'/Login');await page.locator('#Username').fill('demo');await page.locator('#Password').fill(password);
+  await page.goto(base+'/Login');await page.locator('#Username').fill(process.env.TEST_USERNAME||'demo');await page.locator('#Password').fill(password);
   await Promise.all([page.waitForURL(base+'/'),page.getByRole('button',{name:'Iniciar sesión'}).click()]);
   await page.goto(base+'/Register');assert(await page.locator('#employee-card').isHidden());
   assert((await page.locator('aside').allTextContents()).some(t=>t.includes('HORA SIMULADA')));

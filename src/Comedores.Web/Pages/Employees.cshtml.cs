@@ -55,6 +55,11 @@ public class EmployeesModel(AppDb db, EmployeePhotos photos, ILogger<EmployeesMo
   if(employee!=null){employee.Active=false;await db.SaveChangesAsync();await tx.CommitAsync();Message="Empleado dado de baja. Se conserva su historial de consumos y fotografía.";}
   return RedirectToPage(new{Number=employeeNumber});
  }
+ public async Task<IActionResult> OnGetPhotoAsync(string number) {
+  Response.Headers.CacheControl="no-store, private";Response.Headers["X-Content-Type-Options"]="nosniff";
+  var path=photos.Find(number??"");if(path==null||!await db.Employees.AnyAsync(e=>e.Number==number))return NotFound();
+  try{var bytes=await System.IO.File.ReadAllBytesAsync(path);var type=EmployeePhotos.ContentType(bytes);return type==null?NotFound():File(bytes,type);}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){return NotFound();}
+ }
  public async Task<IActionResult> OnPostPhotoAsync(string employeeNumber,IFormFile? photo){
   if(!EmployeeNumber.IsValid(employeeNumber)||!await db.Employees.AnyAsync(e=>e.Number==employeeNumber))return BadRequest();
   if(photo==null||photo.Length is <=0 or >5*1024*1024)return new JsonResult(new{ok=false,message="Selecciona o captura una fotografía JPEG de máximo 5 MB."}){StatusCode=400};

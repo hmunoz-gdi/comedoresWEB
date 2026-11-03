@@ -1,0 +1,51 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+namespace Comedores.Web.Pages;
+public class UsersModel(UserManager<IdentityUser> users,AppDb db):PageModel {
+ [BindProperty,Required,StringLength(100)] public string Username{get;set;}="";
+ [BindProperty] public string? Password{get;set;}
+ [BindProperty,Required] public string Profile{get;set;}=AccessProfiles.Operator;
+ [TempData] public string? Message{get;set;}
+ [BindProperty] public int? RoomId{get;set;}
+ public List<DiningRoom> Rooms{get;set;}=[];
+ public List<(string Name,string Roles,string Room)> Accounts{get;set;}=[];
+ public async Task OnGetAsync(){
+  Rooms=await db.DiningRooms.OrderBy(r=>r.Name).ToListAsync();
+  foreach(var account in await users.Users.OrderBy(u=>u.UserName).ToListAsync()) {
+   var claim=(await users.GetClaimsAsync(account)).FirstOrDefault(c=>c.Type==AccessProfiles.RoomClaim)?.Value;
+   var room=int.TryParse(claim,out var id)?Rooms.FirstOrDefault(r=>r.Id==id)?.Name:null;
+   Accounts.Add((account.UserName??"",string.Join(", ",await users.GetRolesAsync(account)),room??"—"));
+  }
+ }
+ public async Task<IActionResult> OnPostAsync(string operation){
+  if(!ModelState.IsValid||!new[]{AccessProfiles.Operator,AccessProfiles.Catalog,AccessProfiles.Coordinator}.Contains(Profile)){Message="Indica usuario y un perfil válido.";return RedirectToPage();}
+  if(Profile==AccessProfiles.Operator&&(RoomId==null||!await db.DiningRooms.AnyAsync(r=>r.Id==RoomId))){Message="Selecciona el comedor del operador.";return RedirectToPage();}
+  await using var tx=await db.Database.BeginTransactionAsync();
+  var normalized=users.NormalizeName(Username.Trim());
+  await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({normalized}))");
+  var account=await users.FindByNameAsync(Username.Trim());
+  if(operation=="create"){
+   if(account!=null){Message="El usuario ya existe. Usa Cambiar perfil.";return RedirectToPage();}
+   if(string.IsNullOrEmpty(Password)){Message="Introduce una contraseña de al menos 12 caracteres, con mayúsculas, minúsculas, números y símbolos.";return RedirectToPage();}
+   account=new IdentityUser{UserName=Username.Trim()};var created=await users.CreateAsync(account,Password);
+   if(!created.Succeeded){Message="No se creó la cuenta. Revisa el nombre de usuario y usa una contraseña de al menos 12 caracteres con mayúsculas, minúsculas, números y símbolos.";return RedirectToPage();}
+  }else if(operation=="profile"){
+   if(account==null){Message="El usuario no existe.";return RedirectToPage();}
+   if(await users.IsInRoleAsync(account,AccessProfiles.Admin)){Message="La cuenta administradora se conserva para gestionar el sistema. Usa cuentas operativas separadas.";return RedirectToPage();}
+  }else return BadRequest();
+  // Sólo se admiten los tres perfiles operativos desde este formulario.
+  var previous=await users.GetRolesAsync(account!);
+  var removed=await users.RemoveFromRolesAsync(account!,previous);
+  var added=removed.Succeeded?await users.AddToRoleAsync(account!,Profile):removed;
+  var claims=await users.GetClaimsAsync(account!);
+  var claimsRemoved=await users.RemoveClaimsAsync(account!,claims.Where(c=>c.Type==AccessProfiles.RoomClaim));
+  var claimAdded=Profile==AccessProfiles.Operator?await users.AddClaimAsync(account!,new System.Security.Claims.Claim(AccessProfiles.RoomClaim,RoomId!.Value.ToString())):IdentityResult.Success;
+  var stamp=await users.UpdateSecurityStampAsync(account!);
+  if(added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded)await tx.CommitAsync();
+  Message=added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded?"Perfil guardado. El usuario debe iniciar sesión nuevamente.":"No se pudo completar la asignación. Revisa el perfil de esta cuenta antes de utilizarla.";
+  return RedirectToPage();
+ }
+}

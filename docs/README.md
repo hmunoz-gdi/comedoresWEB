@@ -26,3 +26,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 [Pantalla horizontal y diálogo de fuera de horario](PANTALLA-HORIZONTAL.md).
 
 - [Empleados y fotografía con webcam](EMPLEADOS-Y-CAMARA.md)
+
+- [Perfiles y usuarios](PERFILES-Y-USUARIOS.md)

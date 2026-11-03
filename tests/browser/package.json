@@ -4,7 +4,8 @@
     "test": "node quick-registration.cjs",
     "test:clock": "node server-clock.cjs",
     "test:layout": "node registration-layout.cjs",
-    "test:employees": "node employees.cjs"
+    "test:employees": "node employees.cjs",
+    "test:profiles": "node profiles.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

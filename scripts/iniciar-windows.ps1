@@ -1,4 +1,4 @@
-param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos)
+param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos, [ValidateSet('SUBESTACION','PLATAFORMA','CREI')][string]$Comedor = 'SUBESTACION')
 if ($HoraReal -and $SimularDesayuno) { throw "Elija hora real o simulacion, no ambas." }
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
@@ -28,16 +28,19 @@ try {
         $env:EmployeePhotos__Directory = $RutaFotos
         Write-Host 'Se usara la carpeta de fotos indicada con los permisos de su usuario Windows.'
     }
-    $env:Demo__TerminalIp = '172.16.66.230'
+    $terminalesDemo = @{ SUBESTACION = '172.16.66.230'; PLATAFORMA = '172.16.60.54'; CREI = '172.16.70.68' }
+    $env:Demo__TerminalIp = $terminalesDemo[$Comedor]
+    Write-Host "Comedor de desarrollo seleccionado: $Comedor"
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:Demo__Now = $null
     if ($SimularDesayuno) {
         $env:Demo__Now = (Get-Date).ToString('yyyy-MM-dd') + 'T08:30:00-06:00'
-        Write-Host 'DEMOSTRACION: comedor SUBESTACION, hora simulada 08:30 para probar el desayuno.'
+        Write-Host "DEMOSTRACION: comedor $Comedor, hora simulada 08:30 para probar el desayuno."
     }
     if (-not $SimularDesayuno) { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
     Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080 en tu navegador.'
-    Write-Host 'Usuario: demo. Para detener la aplicacion presiona Ctrl+C.'
+    Write-Host 'Acceso inicial de administracion: demo. Para operacion diaria usa una cuenta con su perfil asignado.'
+    Write-Host 'Para detener la aplicacion presiona Ctrl+C.'
     dotnet run --project src/Comedores.Web --no-launch-profile --urls http://127.0.0.1:5080
     if ($LASTEXITCODE -ne 0) { throw 'La aplicacion se detuvo con un error. Revisa los mensajes anteriores.' }
 }

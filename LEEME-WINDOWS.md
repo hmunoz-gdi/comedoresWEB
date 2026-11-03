@@ -24,3 +24,9 @@ La aplicación crea sus tablas y empleados ficticios en la base vacía. No ejecu
 Si hay un error, compartir el mensaje ocultando cualquier dato sensible. Nunca compartir contraseñas ni una cadena de conexión que las contenga.
 
 Al repetir un tipo de servicio en el mismo día aparece un cuadro con el número de consumos previos. Cancelar no guarda otro; Continuar confirma el registro. Consulta [Horarios y confirmaciones](docs/HORARIOS-Y-CONFIRMACION.md).
+
+## Perfiles de acceso
+
+Después de actualizar `src` y `scripts`, cierra sesión y entra nuevamente con tu cuenta `demo` y su contraseña habitual. En desarrollo, esta cuenta recibe acceso inicial de administración. Abre **Usuarios y perfiles** para crear cuentas de Operador (con su comedor), Catálogo o Coordinador. Consulta [la guía de perfiles](docs/PERFILES-Y-USUARIOS.md).
+
+Para probar otro comedor en este equipo puedes añadir `-Comedor PLATAFORMA` o `-Comedor CREI` al comando de arranque; por defecto se utiliza SUBESTACION. Esta opción sólo configura la terminal de demostración del entorno de desarrollo. Las cuentas de operador deben coincidir con el comedor seleccionado; los coordinadores eligen el comedor y DYN/COM/CEN al registrar, sin restricción de horario.

@@ -9,7 +9,14 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(o=> {
  o.Password.RequiredLength=12; o.Lockout.MaxFailedAccessAttempts=5;
 }).AddEntityFrameworkStores<AppDb>().AddDefaultTokenProviders();
 builder.Services.ConfigureApplicationCookie(o=> { o.LoginPath="/Login"; o.Cookie.HttpOnly=true; });
-builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
+builder.Services.AddAuthorization(o=> {
+ o.AddPolicy("Services",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator));
+ o.AddPolicy("Catalog",p=>p.RequireRole(AccessProfiles.Catalog));
+ o.AddPolicy("Users",p=>p.RequireRole(AccessProfiles.Admin));
+});
+builder.Services.ConfigureApplicationCookie(o=>o.AccessDeniedPath="/Denied");
+builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Reports","Services"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
+builder.Services.Configure<SecurityStampValidatorOptions>(o=>o.ValidationInterval=TimeSpan.Zero);
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<EmployeePhotos>();
 var app = builder.Build();
@@ -34,6 +41,23 @@ if (app.Environment.IsDevelopment()) {
   if(await users.FindByNameAsync("demo")==null) {
    var result=await users.CreateAsync(new IdentityUser {UserName="demo"},password);
    if(!result.Succeeded) throw new InvalidOperationException("La contraseña demo no cumple la política.");
+  }
+ }
+}
+// Las tablas de Identity existentes ya admiten roles; no se altera el catálogo.
+using(var scope=app.Services.CreateScope()) {
+ var roles=scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+ var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+ foreach(var role in AccessProfiles.All)if(!await roles.RoleExistsAsync(role)) {
+  var created=await roles.CreateAsync(new IdentityRole(role));if(!created.Succeeded&&!await roles.RoleExistsAsync(role))throw new InvalidOperationException("No fue posible inicializar perfiles.");
+ }
+ // Primer acceso de administración en desarrollo. No se cambian perfiles ya asignados.
+ if(app.Environment.IsDevelopment()) {
+  var demo=await users.FindByNameAsync("demo");
+  if(demo!=null&&(await users.GetRolesAsync(demo)).Count==0) {
+   var assigned=await users.AddToRolesAsync(demo,AccessProfiles.All);
+   if(!assigned.Succeeded)throw new InvalidOperationException("No fue posible asignar los perfiles iniciales.");
+   await users.UpdateSecurityStampAsync(demo);
   }
  }
 }

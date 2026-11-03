@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Claims;
 namespace Comedores.Web;
 public record MealRegistrationResult(string Message,bool Ok=false,bool NeedsConfirmation=false,int SegmentCount=0,string? ServiceType=null,bool OutsideHours=false);
 public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment environment) {
@@ -18,21 +19,34 @@ public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment en
   return (matches[0],null,false);
  }
  public async Task<string> Register(string number,string ip,string user,Guid request) => (await RegisterDetailed(number,ip,user,request)).Message;
- public async Task<MealRegistrationResult> RegisterDetailed(string number,string ip,string user,Guid request,int? confirmedSegmentCount=null,string? confirmedServiceType=null) {
+ public Task<MealRegistrationResult> RegisterDetailed(string number,string ip,string user,Guid request,int? confirmedSegmentCount=null,string? confirmedServiceType=null)=>RegisterCore(number,ip,user,request,confirmedSegmentCount,confirmedServiceType,false,null,null);
+ public Task<MealRegistrationResult> RegisterForUser(ClaimsPrincipal user,string number,string ip,Guid request,int? count,string? confirmedType,string? selectedType,int? roomId) {
+  if(!AccessProfiles.Services(user))return Task.FromResult(new MealRegistrationResult("El perfil no permite registrar servicios."));
+  return RegisterAsPrincipal();
+  async Task<MealRegistrationResult> RegisterAsPrincipal(){
+   if(!user.IsInRole(AccessProfiles.Coordinator)) {
+    var terminal=await Terminal(ip);
+    if(AccessProfiles.OperatorRoom(user)==null||terminal?.DiningRoomId!=AccessProfiles.OperatorRoom(user))return new("El equipo no corresponde al comedor asignado a tu cuenta. Solicita revisión al administrador.");
+   }
+   return await RegisterCore(number,ip,user.Identity?.Name??"",request,count,confirmedType,user.IsInRole(AccessProfiles.Coordinator),selectedType,roomId);
+  }
+ }
+ private async Task<MealRegistrationResult> RegisterCore(string number,string ip,string user,Guid request,int? confirmedSegmentCount,string? confirmedServiceType,bool coordinator,string? selectedType,int? roomId) {
   if(!EmployeeNumber.IsValid(number)) return new(EmployeeNumber.ValidationMessage);
   if(request==Guid.Empty) return new("Solicitud inválida; vuelve a consultar al empleado.");
   var employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==number);
   if(employee is null) return new("El empleado no está en el catálogo.");
   if(employee.Active!=true) return new("El empleado no tiene habilitado el registro. Consulte a RH.");
-  var terminal=await Terminal(ip);
-  if(terminal is null) return new("Equipo sin comedor autorizado.");
+  var terminal=coordinator && roomId!=null && await db.DiningRooms.AnyAsync(r=>r.Id==roomId)?new Terminal {DiningRoomId=roomId.Value}:coordinator?null:await Terminal(ip);
+  if(coordinator && !MealTypes.IsKnown(selectedType??""))return new("Selecciona DYN, COM o CEN.");
+  if(terminal is null) return new(coordinator?"Selecciona un comedor válido.":"Equipo sin comedor autorizado.");
   var now=Now; var local=Local(now); var date=DateOnly.FromDateTime(local);
   await using var tx=await db.Database.BeginTransactionAsync();
   // Serializa registros simultáneos del mismo empleado, incluso desde otros comedores.
   await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({(long)employee.Id})");
   var existing=await db.Consumptions.AsNoTracking().SingleOrDefaultAsync(x=>x.RequestId==request);
   if(existing!=null) return existing.EmployeeId==employee.Id?new("Esta solicitud ya fue registrada; no se duplicó el consumo.",Ok:true):new("La solicitud pertenece a otro empleado; vuelve a consultar.");
-  var period=await PeriodAtAsync(terminal.DiningRoomId,now);
+  var period=coordinator?(Window:new MealWindow{Type=selectedType!},Error:(string?)null,OutsideHours:false):await PeriodAtAsync(terminal.DiningRoomId,now);
   if(period.Window==null) return new(period.Error!,OutsideHours:period.OutsideHours);
   var segmentCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date && x.Type==period.Window.Type);
   if(segmentCount>0 && (confirmedSegmentCount!=segmentCount || confirmedServiceType!=period.Window.Type))

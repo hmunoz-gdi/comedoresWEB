@@ -62,6 +62,7 @@ try {
  Check(new Employee{Number="39999"}.Category=="Corporativo" && new Employee{Number="40000"}.Category=="Operativo" && new Employee{Number="48999"}.Category=="Operativo" && new Employee{Number="49000"}.Category=="Mando","Fronteras de categorías confirmadas");
  await using(var db=Db()) {
   var report=new Comedores.Web.Pages.ReportsModel(db,Service(db)){From=new(2026,10,19),To=new(2026,10,19),RoomId=2,Category="Operativo"};
+  report.PageContext=new Microsoft.AspNetCore.Mvc.RazorPages.PageContext{HttpContext=new Microsoft.AspNetCore.Http.DefaultHttpContext{User=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Coordinator)},"test"))}};
   await report.OnGetAsync();
   Check(report.Rows.Count==1 && report.Rows[0].DailySequence==2,"Reporte filtrado conserva adicional generado en otro comedor");
  }
@@ -120,6 +121,7 @@ try {
  }
  await using(var db=Db()) {
   var report=new Comedores.Web.Pages.ReportsModel(db,Service(db)){From=new(2026,10,21),To=new(2026,10,21)};
+  report.PageContext=new Microsoft.AspNetCore.Mvc.RazorPages.PageContext{HttpContext=new Microsoft.AspNetCore.Http.DefaultHttpContext{User=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Coordinator)},"test"))}};
   await report.OnGetAsync();
   Check(report.Rows.Count==27 && new[]{"DYN","COM","CEN"}.All(type=>report.Rows.Count(x=>x.Type==type)==9),"Reporte conserva tipos y las 27 horas registradas en tres comedores");
   var config=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"Demo:Now",UtcAt(new(10,0),22).ToString("O")}}).Build();

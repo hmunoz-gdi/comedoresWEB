@@ -11,6 +11,13 @@ public class ReportsModel(AppDb db, MealService meals):PageModel {
  public List<Consumption> Rows {get;set;}=[];
  public async Task OnGetAsync() {
   Rooms=await db.DiningRooms.OrderBy(x=>x.Name).ToListAsync();
+  if(!User.IsInRole(AccessProfiles.Coordinator)) {
+   var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
+   if(terminal==null||AccessProfiles.OperatorRoom(User)!=terminal.DiningRoomId){Rooms=[];ModelState.AddModelError("","Equipo sin comedor autorizado para consultar reportes.");return;}
+   Rooms=Rooms.Where(r=>r.Id==terminal.DiningRoomId).ToList();
+   if(RoomId!=null&&RoomId!=terminal.DiningRoomId){ModelState.AddModelError("","El perfil Operador sólo permite reportes de su comedor.");return;}
+   RoomId=terminal.DiningRoomId;
+  }
   if(From>To) ModelState.AddModelError("","La fecha inicial no puede ser posterior a la final.");
   if(To.DayNumber-From.DayNumber>366) ModelState.AddModelError("","Seleccione un periodo de hasta 366 días.");
   if(!ModelState.IsValid) return;

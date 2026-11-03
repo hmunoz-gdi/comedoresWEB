@@ -18,7 +18,7 @@
         update(clock, timeFormat.format(utc));
         update(date, dateFormat.format(utc));
         clock.dateTime = date.dateTime = utc.toISOString();
-        if (periods !== null) {
+        if (periods !== null && banner.dataset.manual !== 'true') {
             const parts = Object.fromEntries(timeFormat.formatToParts(utc).map(p => [p.type, p.value]));
             const seconds = Number(parts.hour) * 3600 + Number(parts.minute) * 60 + Number(parts.second) + utc.getUTCMilliseconds() / 1000;
             const matches = periods.filter(p => p.startSeconds <= seconds && p.endSeconds >= seconds);

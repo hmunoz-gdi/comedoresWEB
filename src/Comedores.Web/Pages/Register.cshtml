@@ -1,10 +1,10 @@
 @page
 @model RegisterModel
-@{ViewData["Title"]="Registrar servicio"; ViewData["BodyClass"]="registration-page"; var e=Model.Employee;}
+@{ViewData["Title"]="Registrar servicio"; ViewData["BodyClass"]=Model.IsCoordinator?"registration-page registration-coordinator":"registration-page"; var e=Model.Employee;}
 <div class="registration-top"><div class="registration-heading"><p class="eyebrow">REGISTRO DE COMENSALES</p>
 <h1>Registrar servicio</h1>
-<p>Comedor: <strong>@(Model.Room??"Equipo sin configurar")</strong></p></div>
-<section class="server-banner" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
+<p>Comedor: <strong>@(Model.IsCoordinator?"Seleccionar al registrar":Model.Room??"Equipo sin configurar")</strong></p></div>
+<section class="server-banner" data-manual="@(Model.IsCoordinator?"true":"false")" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
  <div class="server-banner-top"><span id="clock-status" role="status">Sincronizando con el servidor…</span><button type="button" id="clock-motion" class="secondary" aria-pressed="false">Pausar marquesina</button></div>
  <div class="server-banner-main"><time id="server-clock" aria-live="off">@Model.ServerClock</time><time id="server-date" aria-live="off">@Model.ServerDate</time></div>
  <p class="server-banner-service">Servicio vigente: <strong id="current-service">@Model.CurrentService</strong> · Ciudad de México</p>
@@ -19,6 +19,7 @@
   <small id="number-help">Número + Enter: consultar · Enter otra vez: registrar · Esc: siguiente comensal.</small>
  </div>
  <button id="lookup-button">Consultar</button>
+ @if(Model.IsCoordinator){<div class="coordinator-options"><div><label for="CoordinatorRoomId">Comedor del servicio</label><select asp-for="CoordinatorRoomId" form="registration-form" required><option value="">Selecciona comedor</option>@foreach(var room in Model.CoordinatorRooms){<option value="@room.Id">@room.Name</option>}</select></div><div><label for="SelectedServiceType">Tipo de servicio *</label><select asp-for="SelectedServiceType" form="registration-form" required><option value="">Selecciona tipo</option><option value="DYN">DYN · Desayuno</option><option value="COM">COM · Comida</option><option value="CEN">CEN · Cena</option></select></div></div><p class="coordinator-note">Coordinador: tipo manual, sin restricción de horario.</p>}
  <details class="registration-note"><summary>Reglas del servicio</summary><p>Se aplica el horario del comedor. Si repites desayuno, comida o cena se solicita confirmación antes de guardar.</p></details>
 </form>
 <section class="panel employee-card" id="employee-card" data-number="@e?.Number" hidden="@(e==null)">
@@ -38,6 +39,7 @@
    <div><dt>Servicios hoy · todos los comedores</dt><dd id="employee-count">@Model.TodayCount</dd></div>
   </dl>
   <form method="post" id="registration-form" data-quick-url="@Url.Page("/Register","Quick")">
+
    <input type="hidden" name="Number" id="registration-number" value="@Model.Number"/>
    <input type="hidden" asp-for="RequestId"/>
    <button id="register-button" disabled="@(!Model.CanRegister)">Registrar servicio · Enter</button>

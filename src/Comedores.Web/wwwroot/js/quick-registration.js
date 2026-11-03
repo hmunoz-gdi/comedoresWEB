@@ -90,6 +90,7 @@
     registration.addEventListener('submit', async event => {
         event.preventDefault();
         if (busy || !ready || number.value !== loadedNumber) return;
+        if (!registration.reportValidity()) return;
         const payload = new FormData(registration); // Mismo RequestId al reintentar tras error de red.
         setBusy(true); notify('Registrando servicio…');
         try {

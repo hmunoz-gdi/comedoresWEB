@@ -33,7 +33,16 @@ public class Consumption {
  public string Operator { get; set; } = "";
  public int DailySequence { get; set; }
 }
+public class AccountSecurityEvent {
+ public long Id{get;set;}
+ public DateTime OccurredAt{get;set;}
+ public string Account{get;set;}="";
+ public string Actor{get;set;}="";
+ public string Action{get;set;}="";
+ public string Reason{get;set;}="";
+}
 public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<IdentityUser>(options) {
+ public DbSet<AccountSecurityEvent> AccountSecurityEvents=>Set<AccountSecurityEvent>();
  public DbSet<Employee> Employees => Set<Employee>();
  public DbSet<DiningRoom> DiningRooms => Set<DiningRoom>();
  public DbSet<Terminal> Terminals => Set<Terminal>();

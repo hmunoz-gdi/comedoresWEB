@@ -28,3 +28,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Empleados y fotografía con webcam](EMPLEADOS-Y-CAMARA.md)
 
 - [Perfiles y usuarios](PERFILES-Y-USUARIOS.md)
+
+- [Bloqueo de cuentas y desbloqueo administrativo](BLOQUEO-Y-DESBLOQUEO.md)

@@ -5,7 +5,8 @@
     "test:clock": "node server-clock.cjs",
     "test:layout": "node registration-layout.cjs",
     "test:employees": "node employees.cjs",
-    "test:profiles": "node profiles.cjs"
+    "test:profiles": "node profiles.cjs",
+    "test:lockout": "node lockout.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

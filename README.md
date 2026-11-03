@@ -98,3 +98,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Empleados y fotografía con webcam](docs/EMPLEADOS-Y-CAMARA.md)
 
 - [Perfiles y usuarios](docs/PERFILES-Y-USUARIOS.md)
+
+- [Bloqueo de cuentas y desbloqueo administrativo](docs/BLOQUEO-Y-DESBLOQUEO.md)

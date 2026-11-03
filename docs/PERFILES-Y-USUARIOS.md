@@ -55,10 +55,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iniciar-windows.ps1 -HoraR
 
 Valores: `SUBESTACION` (predeterminado), `PLATAFORMA`, `CREI`. Esta opción es de desarrollo y selecciona una terminal de demostración existente; en producción se valida la IP real autorizada. No basta con cambiar el comedor de la cuenta mientras el equipo sigue identificado como SUBESTACION.
 
-La carpeta de fotografías y los permisos de escritura no cambian. Tampoco se borran empleados, consumos, horarios o contraseñas al actualizar. Se utilizan las tablas de roles y claims de Identity que ya existen: no requiere reiniciar el catálogo ni cambiar el esquema.
+La carpeta de fotografías y los permisos de escritura no cambian. Tampoco se borran empleados, consumos, horarios o contraseñas al actualizar. Se utilizan las tablas de roles y claims de Identity que ya existen: no requiere reiniciar el catálogo. La actualización de bloqueo añade una tabla de bitácora sin borrar datos.
 
 ## Comprobaciones
 
 La suite `tests/browser/profiles.cjs` usa dos instancias sobre una misma base **aislada de pruebas**, una a las 12:00 fuera de horario y otra a las 09:00 dentro de desayuno. Crea cuentas ficticias y verifica perfiles, menús, denegación de acceso directo, solicitudes manipuladas, reportes por comedor, selección manual de los tres tipos, confirmación de repetición y revocación de sesiones.
 
 Las suites históricas del reloj, registro rápido y vista horizontal deben utilizar `TEST_USERNAME` con una cuenta **Operador** asignada al comedor de su terminal y `TEST_DEMO_PASSWORD` con su contraseña. La cuenta inicial `demo` ahora tiene selección manual de Coordinador; no representa el flujo del operador. La suite de empleados requiere Catálogo para las pantallas de empleados y una cuenta con permiso de servicios si prueba el ciclo completo; la cuenta administrativa inicial incluye ambos permisos.
+
+Consulta [bloqueos y desbloqueos](BLOQUEO-Y-DESBLOQUEO.md): tres intentos fallidos bloquean la cuenta hasta la intervención de administración.

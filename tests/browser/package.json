@@ -6,7 +6,8 @@
     "test:layout": "node registration-layout.cjs",
     "test:employees": "node employees.cjs",
     "test:profiles": "node profiles.cjs",
-    "test:lockout": "node lockout.cjs"
+    "test:lockout": "node lockout.cjs",
+    "test:success": "node success-dialog.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

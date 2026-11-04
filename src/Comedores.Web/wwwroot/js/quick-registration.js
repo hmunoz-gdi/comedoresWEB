@@ -110,8 +110,26 @@
             if (data.ok) {
                 ready = false; loadedNumber = ''; number.value = '';
                 el('registration-number').value = ''; el('RequestId').value = '';
-                el('employee-count').textContent = data.todayCount;
-                el('employee-stage').textContent = 'ÚLTIMO SERVICIO REGISTRADO';
+                for (const id of ['SelectedServiceType','CoordinatorRoomId']) { const select = el(id); if (select) select.value = ''; }
+                card.hidden = true; card.dataset.number = '';
+                const cleanUrl = new URL(window.location.href);
+                for (const key of [...cleanUrl.searchParams.keys()]) if (key.toLowerCase() === 'number') cleanUrl.searchParams.delete(key);
+                history.replaceState(history.state, '', cleanUrl);
+                ++photoVersion; // Invalida cualquier carga de fotografía que siga pendiente.
+                const photo = el('employee-photo');
+                photo.onload = null; photo.onerror = null; photo.removeAttribute('src'); photo.hidden = true;
+                photo.alt = 'Fotografía del empleado';
+                el('photo-placeholder').hidden = false; el('photo-label').textContent = 'Sin fotografía';
+                for (const id of ['employee-name','employee-number','employee-area','employee-position','employee-schedule','employee-special','employee-count']) el(id).textContent = '';
+                el('employee-stage').textContent = 'COMENSAL CONSULTADO';
+                button.disabled = true;
+                message.textContent = ''; message.hidden = true;
+                const dialog = el('success-dialog');
+                el('success-message').textContent = data.message;
+                await new Promise(resolve => {
+                    dialog.addEventListener('close', resolve, { once: true });
+                    dialog.showModal(); el('success-accept').focus();
+                });
             }
         } catch (error) { notify(explain(error) + ' Puedes reintentar esta misma solicitud sin duplicarla.'); }
         finally { setBusy(false); focus(); }

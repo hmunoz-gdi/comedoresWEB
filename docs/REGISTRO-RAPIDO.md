@@ -32,8 +32,8 @@ La nube no puede comprobar el recurso privado de la organización. La validació
 1. Escribir el número (1 a 5 dígitos) y pulsar Enter.
 2. Verificar número, nombre y fotografía. Si hay turno especial se muestra en la ficha.
 3. Pulsar Enter otra vez, después de soltar la tecla. Si ya tiene servicios del mismo segmento y día aparece un cuadro: Cancelar no guarda, Continuar confirma. El foco inicial es Cancelar para prevenir una aceptación accidental; con teclado usar Tab para seleccionar Continuar. No es un registro automático al terminar de escribir.
-4. Esperar la confirmación. El campo queda vacío y con el cursor listo; la ficha anterior se identifica como Último servicio registrado.
-5. Escribir el siguiente número. La ficha previa se oculta para evitar confundir empleados.
+4. Al guardar, se limpia la ficha y aparece **Servicio aplicado**. Pulsa Aceptar o Enter para cerrar el cuadro; el cursor vuelve al número de empleado.
+5. Escribir el siguiente número. La pantalla queda lista y sin datos del comensal anterior.
 
 El flujo funciona sin recargar toda la página. Se mantienen los botones Consultar y Registrar para operación con ratón. Escape limpia la selección y permite atender al siguiente sin guardar un consumo.
 
@@ -54,3 +54,9 @@ Se probó con Chromium real: consulta/confirmación con Enter, tecla mantenida, 
 Para repetir esas pruebas, preparar una base de prueba con empleados 40001 y 49001, cuenta demo, horario de desayuno y una PNG ficticia llamada 40001.png en el directorio de fotos. Ejecutar la aplicación en puerto 5082 con ese horario de prueba; no apuntar a la base operativa. En `tests/browser`: `npm ci`, instalar Chromium de Playwright o indicar `CHROMIUM_PATH`, y ejecutar `npm test`. La contraseña se lee de `TEST_DEMO_PASSWORD` o del archivo local de demo, sin imprimirse. La prueba agrega consumos ficticios.
 
 La reducción de pasos no garantiza todavía un tiempo por comensal. Medirlo en el equipo y red reales antes de usarlo en hora pico. Si SMB introduce demoras en fotos, evaluar una copia local controlada; el flujo de consulta no necesita esperar la comprobación de existencia de la foto en la red para mostrar los datos.
+
+## Confirmación de servicio aplicado
+
+Después de guardar correctamente, se limpian el número, la ficha, la fotografía y los datos ocultos de la solicitud. Aparece el cuadro **Servicio aplicado**, con el tipo, hora y detalle del registro confirmado por el servidor. Pulsa **Aceptar**, Enter o Escape: el cursor vuelve al número de empleado. En Coordinador también se limpian las selecciones de comedor y tipo para el siguiente registro.
+
+Si se cancela la confirmación de repetición o falla el guardado, se conserva la ficha y no se anuncia éxito. Se mantiene la protección contra registros duplicados al reintentar. Esta actualización se aplica reemplazando `src`, reiniciando la aplicación y recargando con Ctrl+F5; no requiere cambios en la base.

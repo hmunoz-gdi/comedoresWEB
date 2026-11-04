@@ -46,6 +46,11 @@
   </form>
  </div>
 </section></div>
+<dialog id="success-dialog" class="registration-dialog" aria-labelledby="success-title" aria-describedby="success-message">
+ <h2 id="success-title">Servicio aplicado</h2>
+ <p id="success-message"></p>
+ <form method="dialog" class="dialog-actions"><button id="success-accept" autofocus>Aceptar</button></form>
+</dialog>
 <dialog id="hours-dialog" class="registration-dialog" data-show="@((e?.Active==true && Model.OutsideHours)?"true":"false")" aria-labelledby="hours-title" aria-describedby="hours-message">
  <h2 id="hours-title">Fuera de horario</h2>
  <p id="hours-message">Fuera del horario de servicio de este comedor.</p>

@@ -15,10 +15,11 @@ const fs=require('node:fs'),path=require('node:path');
   await target.waitForFunction(()=>!document.getElementById('register-button').disabled);
  };
  const waitMessage=async(text,target=page)=>target.waitForFunction(text=>document.getElementById('registration-message').textContent.includes(text),text);
+ const closeSuccess=async(target=page)=>{await target.locator('#success-dialog').waitFor({state:'visible'});await target.locator('#success-accept').click();await target.waitForFunction(()=>document.activeElement.id==='Number'&&!document.getElementById('Number').readOnly);};
  const finish=async(target=page)=>{
-  await target.waitForFunction(()=>document.getElementById('repeat-dialog').open||document.getElementById('registration-message').textContent.includes('Servicio registrado.'));
+  await target.waitForFunction(()=>document.getElementById('repeat-dialog').open||document.getElementById('success-dialog').open);
   if(await target.locator('#repeat-dialog').isVisible())await target.locator('#continue-repeat').click();
-  await waitMessage('Servicio registrado.',target);
+  await closeSuccess(target);
  };
  try {
   const anon=await page.request.get(base+'/Register?handler=Lookup&number=40001');assert(!(anon.headers()['content-type']||'').includes('application/json'));
@@ -35,7 +36,7 @@ const fs=require('node:fs'),path=require('node:path');
   await page.waitForFunction(()=>document.getElementById('employee-photo').naturalWidth>0);
   await page.keyboard.press('Enter');await finish();
   assert.equal(await page.locator('#Number').inputValue(),'');assert.equal(await page.evaluate(()=>document.activeElement.id),'Number');
-  assert((await message.textContent()).includes('Desayuno')&&(await message.textContent()).includes(process.env.TEST_EXPECTED_TIME||'08:30:00'));
+  assert((await page.locator('#success-message').textContent()).includes('Desayuno')&&(await page.locator('#success-message').textContent()).includes(process.env.TEST_EXPECTED_TIME||'08:30:00'));
   assert.equal(await count(),before+1);
   phase='cancelar repetición';
   await consult(page,'40001');await page.keyboard.press('Enter');await page.locator('#repeat-dialog').waitFor({state:'visible'});
@@ -62,7 +63,7 @@ const fs=require('node:fs'),path=require('node:path');
   });
   await page.keyboard.press('Enter');await page.locator('#repeat-dialog').waitFor({state:'visible'});await page.locator('#continue-repeat').click();
   await waitMessage('Puedes reintentar');await page.unroute(pattern);
-  await page.keyboard.press('Enter');await waitMessage('Esta solicitud ya fue registrada;');assert.equal(await count(),before+4);
+  await page.keyboard.press('Enter');await page.waitForFunction(()=>document.getElementById('success-message').textContent.includes('Esta solicitud ya fue registrada;'));await closeSuccess();assert.equal(await count(),before+4);
   phase='Escape';await consult(page,'49001');await page.keyboard.press('Escape');assert.equal(await page.locator('#Number').inputValue(),'');assert(await page.locator('#employee-card').isHidden());
   if(process.env.TEST_REPORT_FIXTURE==='1') {
    phase='reporte y PDF';

@@ -13,3 +13,5 @@ Actualización en Windows: detener con Ctrl+C, copiar la carpeta `src` de la ver
 La ficha utiliza fotografía de 210 × 280 píxeles en monitores amplios y 155 × 210 en monitores pequeños; en ventanas de poca altura reduce la altura para mantener el registro visible. El nombre tiene separación, mayor tamaño y un divisor antes de los datos. El título del sistema aparece en un bloque propio con un icono de plato y cubiertos. Se verificó visualmente con un nombre largo y campos extensos en 1366 × 768 y 1024 × 650, sin desplazamiento vertical en la ficha; en móvil se conserva desplazamiento natural sin desbordamiento horizontal.
 
 Los archivos originales recibidos en `Logos.zip` se conservan sin alteraciones en `wwwroot/images`. Se seleccionaron las variantes transparentes para el menú, el acceso y la cabecera impresa.
+
+El menú lateral muestra sólo Marina Grupo Aeroportuario, con AICM de mayor tamaño debajo. La identidad del sistema utiliza un avión vectorial y el enlace Registrar servicio conserva el plato con cubiertos, para distinguir ambos elementos. Los logotipos dentro del inicio de sesión mantienen su distribución propia.

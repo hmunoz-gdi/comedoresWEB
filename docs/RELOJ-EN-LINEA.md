@@ -32,3 +32,7 @@ El reloj debe avanzar aunque no se consulte ningún empleado. Comprobar que coin
 Prueba en Chromium con el cliente en otra zona horaria y Date.now alterado: avance de segundos, fecha del servidor, pausa, movimiento reducido, cambio de servicio, medianoche, pérdida/recuperación de sincronización y simulación fija. También se repitió el flujo de registro rápido y la confirmación de servicios repetidos.
 
 La prueba está en `tests/browser/server-clock.cjs` (`npm run test:clock`). Usa `TEST_BASE_URL` para el servidor de prueba en hora real y, opcionalmente, `TEST_SIM_BASE_URL` para un segundo proceso con la hora simulada. Requiere Playwright/Chromium y la cuenta demo de pruebas. No necesita consumir servicios para comprobar el reloj.
+
+## Identidad visual en la barra
+
+La barra del reloj incluye el logotipo original de Marina Grupo Aeroportuario en un panel blanco, conservando proporciones y usando el PNG de 1080 × 832 píxeles a un tamaño menor que el original. La distribución mantiene visibles reloj, fecha, servicio y control de marquesina en escritorio y se reorganiza en móvil. El enlace Registrar servicio utiliza un pictograma vectorial de plato y cubiertos en lugar del signo +, para distinguirlo de una acción de expandir.

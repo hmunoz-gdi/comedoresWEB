@@ -5,6 +5,7 @@
 <h1>Registrar servicio</h1>
 <p>Comedor: <strong>@(Model.IsCoordinator?"Seleccionar al registrar":Model.Room??"Equipo sin configurar")</strong></p></div>
 <section class="server-banner" data-manual="@(Model.IsCoordinator?"true":"false")" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
+ <div class="server-banner-logo"><img src="~/images/grupo-aeroportuario-marina.png" asp-append-version="true" alt="Marina Grupo Aeroportuario" width="1080" height="832"/></div>
  <div class="server-banner-top"><span id="clock-status" role="status">Sincronizando con el servidor…</span><button type="button" id="clock-motion" class="secondary" aria-pressed="false">Pausar marquesina</button></div>
  <div class="server-banner-main"><time id="server-clock" aria-live="off">@Model.ServerClock</time><time id="server-date" aria-live="off">@Model.ServerDate</time></div>
  <p class="server-banner-service">Servicio vigente: <strong id="current-service">@Model.CurrentService</strong> · Ciudad de México</p>

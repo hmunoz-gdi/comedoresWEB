@@ -46,6 +46,11 @@
   </form>
  </div>
 </section></div>
+<dialog id="not-found-dialog" class="registration-dialog" data-show="@(Model.EmployeeNotFound?"true":"false")" aria-labelledby="not-found-title" aria-describedby="not-found-message">
+ <h2 id="not-found-title">Empleado no encontrado</h2>
+ <p id="not-found-message">Empleado no encontrado en el catálogo. Revisa el número de empleado.</p>
+ <form method="dialog" class="dialog-actions"><button id="not-found-accept" autofocus>Aceptar</button></form>
+</dialog>
 <dialog id="success-dialog" class="registration-dialog" aria-labelledby="success-title" aria-describedby="success-message">
  <h2 id="success-title">Servicio aplicado</h2>
  <p id="success-message"></p>

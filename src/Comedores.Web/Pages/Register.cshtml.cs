@@ -18,6 +18,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
  public bool HasPhoto {get;set;}
  public bool CanRegister {get;set;}
  public bool OutsideHours {get;set;}
+ public bool EmployeeNotFound {get;set;}
  public bool IsSimulated => meals.IsSimulated;
  public string ServerClock {get;set;}="";
  public string ServerDate {get;set;}="";
@@ -38,7 +39,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   if(string.IsNullOrEmpty(Number) && !Request.Query.ContainsKey("Number")) return;
   if(!EmployeeNumber.IsValid(Number)) {Message=EmployeeNumber.ValidationMessage;return;}
   Employee=await db.Employees.SingleOrDefaultAsync(x=>x.Number==Number);
-  if(Employee==null) { Message="Empleado no encontrado en el catálogo.";return; }
+  if(Employee==null) { EmployeeNotFound=true;Message="Empleado no encontrado en el catálogo.";return; }
   CanRegister=Employee.Active==true && (IsCoordinator||(period.Item1!=null && terminal?.DiningRoomId==AccessProfiles.OperatorRoom(User)));
   HasPhoto=photos.Find(Employee.Number)!=null;
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
@@ -55,7 +56,7 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   Response.Headers.CacheControl="no-store";
   if(!EmployeeNumber.IsValid(number)) return new JsonResult(new {ok=false,message=EmployeeNumber.ValidationMessage});
   var employee=await db.Employees.AsNoTracking().SingleOrDefaultAsync(x=>x.Number==number);
-  if(employee is null) return new JsonResult(new {ok=false,message="Empleado no encontrado en el catálogo."});
+  if(employee is null) return new JsonResult(new {ok=false,notFound=true,message="Empleado no encontrado en el catálogo."});
   var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
   var now=meals.Now;
   var date=DateOnly.FromDateTime(MealService.Local(now));

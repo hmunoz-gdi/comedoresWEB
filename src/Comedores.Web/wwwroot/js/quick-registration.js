@@ -48,6 +48,16 @@
             el('hours-accept').focus();
         });
     }
+    function warnNotFound() {
+        const dialog = el('not-found-dialog');
+        message.textContent = ''; message.hidden = true;
+        ready = false; loadedNumber = ''; card.hidden = true; card.dataset.number = '';
+        button.disabled = true; el('registration-number').value = ''; el('RequestId').value = '';
+        return new Promise(resolve => {
+            dialog.addEventListener('close', resolve, { once: true });
+            dialog.showModal(); el('not-found-accept').focus();
+        });
+    }
     lookup.addEventListener('submit', async event => {
         event.preventDefault();
         if (busy) return;
@@ -58,7 +68,7 @@
             const url = new URL(lookup.dataset.lookupUrl, window.location.origin);
             url.searchParams.set('number', number.value);
             const data = await json(await fetch(url, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(15000) }));
-            if (!data.ok) { notify(data.message); return; }
+            if (!data.ok) { if (data.notFound) { await warnNotFound(); number.select(); } else notify(data.message); return; }
             loadedNumber = data.number;
             el('current-service').textContent = data.currentService;
             el('registration-number').value = data.number;
@@ -155,7 +165,10 @@
     document.addEventListener('keyup', event => { if (event.key === 'Enter') enterHeld = false; });
     window.addEventListener('blur', () => { enterHeld = false; });
     focus();
-    if (el('hours-dialog').dataset.show === 'true') {
+    if (el('not-found-dialog').dataset.show === 'true') {
+        setBusy(true);
+        warnNotFound().then(() => { setBusy(false); focus(); number.select(); });
+    } else if (el('hours-dialog').dataset.show === 'true') {
         warnOutsideHours(el('hours-message').textContent).then(() => { focus(); number.select(); });
     }
 })();

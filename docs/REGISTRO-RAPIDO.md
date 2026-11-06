@@ -57,7 +57,7 @@ La reducción de pasos no garantiza todavía un tiempo por comensal. Medirlo en 
 
 ## Confirmación de servicio aplicado
 
-Después de guardar correctamente, se limpian el número, la ficha, la fotografía y los datos ocultos de la solicitud. Aparece el cuadro **Servicio aplicado**, con el tipo, hora y detalle del registro confirmado por el servidor. Pulsa **Aceptar**, Enter o Escape: el cursor vuelve al número de empleado. En Coordinador también se limpian las selecciones de comedor y tipo para el siguiente registro.
+Después de guardar correctamente, se limpian el número, la ficha, la fotografía y los datos ocultos de la solicitud. Aparece el cuadro **Servicio aplicado**, con el tipo, hora y detalle del registro confirmado por el servidor. Pulsa **Aceptar**, Enter o Escape: el cursor vuelve al número de empleado. En Coordinador se conservan las selecciones de comedor y tipo durante los siguientes registros, hasta que el usuario las cambie. Al recargar la página o iniciar otra sesión se seleccionan nuevamente.
 
 Si se cancela la confirmación de repetición o falla el guardado, se conserva la ficha y no se anuncia éxito. Se mantiene la protección contra registros duplicados al reintentar. Esta actualización se aplica reemplazando `src`, reiniciando la aplicación y recargando con Ctrl+F5; no requiere cambios en la base.
 

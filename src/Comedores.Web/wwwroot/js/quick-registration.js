@@ -120,7 +120,7 @@
             if (data.ok) {
                 ready = false; loadedNumber = ''; number.value = '';
                 el('registration-number').value = ''; el('RequestId').value = '';
-                for (const id of ['SelectedServiceType','CoordinatorRoomId']) { const select = el(id); if (select) select.value = ''; }
+                // Conserva comedor y tipo para atender grupos sin repetir la selección.
                 card.hidden = true; card.dataset.number = '';
                 const cleanUrl = new URL(window.location.href);
                 for (const key of [...cleanUrl.searchParams.keys()]) if (key.toLowerCase() === 'number') cleanUrl.searchParams.delete(key);

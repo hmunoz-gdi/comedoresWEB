@@ -1,6 +1,14 @@
-param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos, [ValidateSet('SUBESTACION','PLATAFORMA','CREI')][string]$Comedor = 'SUBESTACION')
-if ($HoraReal -and $SimularDesayuno) { throw "Elija hora real o simulacion, no ambas." }
+param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos, [ValidateSet('SUBESTACION','PLATAFORMA','CREI')][string]$Comedor = 'SUBESTACION', [string]$FechaHoraPrueba)
+if ($HoraReal -and ($SimularDesayuno -or $FechaHoraPrueba)) { throw "Elija hora real o simulacion, no ambas." }
 $ErrorActionPreference = 'Stop'
+$fechaValidada = [DateTimeOffset]::MinValue
+if ($FechaHoraPrueba -and -not [DateTimeOffset]::TryParseExact($FechaHoraPrueba, "yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$fechaValidada)) {
+    throw 'Fecha de prueba invalida. Ejemplo: -FechaHoraPrueba "2026-11-06T14:30:00-06:00"'
+}
+Write-Host "Archivo de arranque: $PSCommandPath"
+$ocupado = [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() | Where-Object { $_.Port -eq 5080 }
+if ($ocupado) { throw 'El puerto 5080 ya esta en uso. Deten la aplicacion anterior con Ctrl+C en su terminal antes de arrancar otra instancia.' }
+
 Set-Location (Join-Path $PSScriptRoot '..')
 function Read-PrivateText([string]$Prompt) {
     $secret = Read-Host $Prompt -AsSecureString
@@ -33,15 +41,17 @@ try {
     Write-Host "Comedor de desarrollo seleccionado: $Comedor"
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:Demo__Now = $null
-    if ($SimularDesayuno) {
+    if ($FechaHoraPrueba) {
+        $env:Demo__Now = $fechaValidada.ToString("yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture)
+    } elseif ($SimularDesayuno) {
         $env:Demo__Now = (Get-Date).ToString('yyyy-MM-dd') + 'T08:30:00-06:00'
-        Write-Host "DEMOSTRACION: comedor $Comedor, hora simulada 08:30 para probar el desayuno."
     }
-    if (-not $SimularDesayuno) { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
+    if ($env:Demo__Now) { Write-Host ("MODO DE PRUEBA: fecha y hora fija {0}. Los registros se guardaran con este valor." -f $env:Demo__Now) }
+    else { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
     Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080 en tu navegador.'
     Write-Host 'Acceso inicial de administracion: demo. Para operacion diaria usa una cuenta con su perfil asignado.'
     Write-Host 'Para detener la aplicacion presiona Ctrl+C.'
-    dotnet run --project src/Comedores.Web --no-launch-profile --urls http://127.0.0.1:5080
+    dotnet run --project src/Comedores.Web --no-launch-profile -- --urls http://127.0.0.1:5080 "--Demo:Now=$env:Demo__Now"
     if ($LASTEXITCODE -ne 0) { throw 'La aplicacion se detuvo con un error. Revisa los mensajes anteriores.' }
 }
 finally {

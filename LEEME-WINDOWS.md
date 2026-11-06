@@ -30,3 +30,7 @@ Al repetir un tipo de servicio en el mismo día aparece un cuadro con el número
 Después de actualizar `src` y `scripts`, cierra sesión y entra nuevamente con tu cuenta `demo` y su contraseña habitual. En desarrollo, esta cuenta recibe acceso inicial de administración. Abre **Usuarios y perfiles** para crear cuentas de Operador (con su comedor), Catálogo o Coordinador. Consulta [la guía de perfiles](docs/PERFILES-Y-USUARIOS.md).
 
 Para probar otro comedor en este equipo puedes añadir `-Comedor PLATAFORMA` o `-Comedor CREI` al comando de arranque; por defecto se utiliza SUBESTACION. Esta opción sólo configura la terminal de demostración del entorno de desarrollo. Las cuentas de operador deben coincidir con el comedor seleccionado; los coordinadores eligen el comedor y DYN/COM/CEN al registrar, sin restricción de horario.
+
+## Fecha y hora de pruebas
+
+Puedes añadir `-FechaHoraPrueba "2026-11-06T14:30:00-06:00"` al comando de arranque para elegir fecha y hora sin editar el script. No lo combines con `-HoraReal`. Detén primero con Ctrl+C; la terminal indicará la ruta del archivo ejecutado y la fecha elegida. Consulta [la guía del reloj](docs/RELOJ-EN-LINEA.md) para ejemplos y diagnóstico de copias antiguas o puerto 5080 ocupado.

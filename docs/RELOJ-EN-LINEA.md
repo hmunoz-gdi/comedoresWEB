@@ -36,3 +36,23 @@ La prueba está en `tests/browser/server-clock.cjs` (`npm run test:clock`). Usa 
 ## Identidad visual en la barra
 
 La barra del reloj incluye el logotipo original de Marina Grupo Aeroportuario en un panel blanco, conservando proporciones y usando el PNG de 1080 × 832 píxeles a un tamaño menor que el original. La distribución mantiene visibles reloj, fecha, servicio y control de marquesina en escritorio y se reorganiza en móvil. El enlace Registrar servicio utiliza un pictograma vectorial de plato y cubiertos en lugar del signo +, para distinguirlo de una acción de expandir.
+
+## Elegir fecha y hora de pruebas sin editar el archivo
+
+Actualiza `scripts/iniciar-windows.ps1`. Desde una terminal integrada abierta en `scripts`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\iniciar-windows.ps1 -FechaHoraPrueba "2026-11-06T14:30:00-06:00" -Comedor SUBESTACION -RutaFotos '\\172.16.2.23\comedor\Fotos'
+```
+
+El formato obligatorio es año-mes-día, T, hora:minuto:segundo y desplazamiento horario. `-06:00` corresponde a Ciudad de México. Esta opción fija tanto la fecha/hora del reloj como la que se guarda en los consumos. Para probar horarios utiliza una cuenta Operador asignada al comedor seleccionado. El Coordinador puede registrar fuera de horario por su permiso.
+
+La terminal imprime **Archivo de arranque** con la ruta del archivo ejecutado y **MODO DE PRUEBA: fecha y hora fija 2026-11-06T14:30:00-06:00**. La fecha se pasa explícitamente como argumento de la aplicación, por encima de una configuración simulada previa. `-SimularDesayuno` sigue disponible para las 08:30 del día actual; si se proporciona también `-FechaHoraPrueba`, tiene prioridad la fecha explícita.
+
+Para volver a la hora real, detén con Ctrl+C y usa el mismo comando sustituyendo `-FechaHoraPrueba "..."` por `-HoraReal`. No combines ambas opciones. El arranque con hora real también anula valores simulados heredados. No es necesario cambiar la fecha o la hora de Windows.
+
+Cada cambio requiere detener el proceso anterior y arrancar nuevamente. El script avisa **El puerto 5080 ya está en uso** si detecta otra instancia; no la cierra automáticamente. Una recarga del navegador por sí sola no cambia la configuración del servidor. Los consumos previos conservan su hora original.
+
+Si PowerShell no reconoce `FechaHoraPrueba`, se está ejecutando un archivo anterior. En VSCodium abre el archivo que modificas, usa Revelar en Explorador para identificar su carpeta real y reemplázalo allí. Comprueba que la ruta impresa al arrancar corresponde a esa copia. Un ZIP descargado o extraído en otra carpeta no actualiza el archivo abierto.
+
+Pruebas: `tests/iniciar-windows.Tests.ps1` valida sintaxis, selección de fecha/hora, formato, conflictos, restauración de variables y puerto ocupado usando entradas y `dotnet` simulados (sin conexiones a bases). Se ejecutó con PowerShell 7 en Linux; utiliza sintaxis compatible con PowerShell 5.1. La prueba `tests/browser/startup-clock.cjs` verifica el reloj y un consumo COM a las 14:30, arrancando la aplicación real con una hora anterior en el entorno y el argumento explícito nuevo. Con `TEST_REAL_BASE_URL` comprueba además una instancia con argumento vacío y hora real.

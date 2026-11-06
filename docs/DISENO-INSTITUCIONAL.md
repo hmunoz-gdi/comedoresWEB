@@ -17,3 +17,7 @@ Los archivos originales recibidos en `Logos.zip` se conservan sin alteraciones e
 El menú lateral muestra sólo Marina Grupo Aeroportuario, con AICM de mayor tamaño debajo. La identidad del sistema utiliza un avión vectorial y el enlace Registrar servicio conserva el plato con cubiertos, para distinguir ambos elementos. Los logotipos dentro del inicio de sesión mantienen su distribución propia.
 
 La marca del menú lateral se sustituyó por el logotipo original de Marina · Secretaría de Marina, conservando AICM debajo.
+
+## Menú lateral ampliado
+
+El menú utiliza 280 px en pantallas de al menos 1440 px, 260 px en escritorio intermedio y 220 px en monitores compactos. El logo conserva su archivo original y ocupa mayor ancho; AICM utiliza una composición ligera con la leyenda Aeropuerto Internacional / Ciudad de México. El título se alinea con el avión para reducir espacio vertical. En ventanas de poca altura se compactan los márgenes y se oculta únicamente el lema decorativo del pie lateral. La captura se revisó con ficha extensa en 1366 × 768 y 1024 × 650, sin desbordamiento horizontal y con el botón de registro visible. La navegación sigue excluida de impresión.

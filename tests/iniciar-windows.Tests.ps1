@@ -27,8 +27,11 @@ try {
  Check ($global:ComedoresTestIp -eq '172.16.60.54') 'Conserva la seleccion de comedor'
  Check ($env:Demo__Now -eq '2026-11-06T08:30:00-06:00') 'Restaura el entorno de la terminal al terminar'
  & $scriptPath -HoraReal
+ Check ([string]::IsNullOrEmpty($global:ComedoresTestIp)) 'Sin -Comedor utiliza IP real, sin terminal simulada predeterminada'
  Check ([string]::IsNullOrEmpty($global:ComedoresTestNow)) 'Hora real elimina la simulacion anterior'
  Check ($global:ComedoresTestArguments -contains '--Demo:Now=') 'Hora real tambien anula configuraciones simuladas anteriores'
+ & $scriptPath -HoraReal -AccesoRed
+ Check ($global:ComedoresTestArguments -contains 'http://0.0.0.0:5080') 'Acceso de red explicito permite conexiones LAN'
  & $scriptPath -SimularDesayuno
  Check ($global:ComedoresTestNow -match 'T08:30:00-06:00$') 'Mantiene la opcion de desayuno rapido'
  Reject @{FechaHoraPrueba='2026-02-30T14:30:00-06:00'} 'Fecha de prueba invalida'

@@ -8,7 +8,20 @@ public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment en
  public bool IsSimulated => environment.IsDevelopment() && DateTimeOffset.TryParse(config["Demo:Now"],out _);
  public DateTime Now => environment.IsDevelopment() && DateTimeOffset.TryParse(config["Demo:Now"],out var time) ? time.UtcDateTime : DateTime.UtcNow;
  public static DateTime Local(DateTime utc)=>TimeZoneInfo.ConvertTimeFromUtc(utc,Zone);
- public string ResolveIp(IPAddress? address)=>environment.IsDevelopment() && !string.IsNullOrEmpty(config["Demo:TerminalIp"]) ? config["Demo:TerminalIp"]! : address?.MapToIPv4().ToString()??"";
+ public bool IsIpSimulated=>environment.IsDevelopment()&&!string.IsNullOrWhiteSpace(config["Demo:TerminalIp"]);
+ public string ResolveIp(IPAddress? address)=>IsIpSimulated?config["Demo:TerminalIp"]!:(address?.IsIPv4MappedToIPv6==true?address.MapToIPv4().ToString():address?.ToString()??"");
+ public async Task<string?> OperatorAccessErrorAsync(ClaimsPrincipal user,string ip) {
+  if(!user.IsInRole(AccessProfiles.Operator)||user.IsInRole(AccessProfiles.Coordinator)||user.IsInRole(AccessProfiles.Admin))return null;
+  var assigned=AccessProfiles.OperatorRoom(user);
+  if(assigned==null)return "Tu cuenta no tiene un comedor asignado. Comunícate con la Mesa de Ayuda, extensión 2442.";
+  var terminal=await db.Terminals.AsNoTracking().Include(t=>t.DiningRoom).SingleOrDefaultAsync(t=>t.Ip==ip);
+  if(terminal==null)return $"La IP {ip} de este equipo no está registrada como terminal autorizada. Usa un equipo autorizado o comunícate con la Mesa de Ayuda, extensión 2442.";
+  if(terminal.DiningRoomId!=assigned) {
+   var assignedName=await db.DiningRooms.Where(r=>r.Id==assigned).Select(r=>r.Name).SingleOrDefaultAsync();
+   return $"Tu cuenta está asignada a {assignedName??"un comedor sin configurar"}, pero la IP {ip} corresponde a {terminal.DiningRoom.Name}. No se permite el acceso desde este equipo. Comunícate con la Mesa de Ayuda, extensión 2442.";
+  }
+  return null;
+ }
  public async Task<Terminal?> Terminal(string ip)=>await db.Terminals.Include(x=>x.DiningRoom).SingleOrDefaultAsync(x=>x.Ip==ip);
  public async Task<(MealWindow? Window,string? Error,bool OutsideHours)> PeriodAtAsync(int roomId,DateTime utc) {
   var hour=TimeOnly.FromDateTime(Local(utc));
@@ -24,10 +37,8 @@ public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment en
   if(!AccessProfiles.Services(user))return Task.FromResult(new MealRegistrationResult("El perfil no permite registrar servicios."));
   return RegisterAsPrincipal();
   async Task<MealRegistrationResult> RegisterAsPrincipal(){
-   if(!user.IsInRole(AccessProfiles.Coordinator)) {
-    var terminal=await Terminal(ip);
-    if(AccessProfiles.OperatorRoom(user)==null||terminal?.DiningRoomId!=AccessProfiles.OperatorRoom(user))return new("El equipo no corresponde al comedor asignado a tu cuenta. Solicita revisión al administrador.");
-   }
+   var denied=await OperatorAccessErrorAsync(user,ip);
+   if(denied!=null)return new(denied);
    return await RegisterCore(number,ip,user.Identity?.Name??"",request,count,confirmedType,user.IsInRole(AccessProfiles.Coordinator),selectedType,roomId);
   }
  }

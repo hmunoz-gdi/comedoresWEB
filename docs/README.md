@@ -30,3 +30,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Perfiles y usuarios](PERFILES-Y-USUARIOS.md)
 
 - [Bloqueo de cuentas y desbloqueo administrativo](BLOQUEO-Y-DESBLOQUEO.md)
+
+- [Acceso de operadores por IP y comedor](ACCESO-POR-IP.md)

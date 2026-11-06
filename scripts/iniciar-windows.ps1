@@ -1,4 +1,4 @@
-param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos, [ValidateSet('SUBESTACION','PLATAFORMA','CREI')][string]$Comedor = 'SUBESTACION', [string]$FechaHoraPrueba)
+param([switch]$HoraReal, [switch]$SimularDesayuno, [string]$RutaFotos, [ValidateSet('SUBESTACION','PLATAFORMA','CREI')][string]$Comedor, [string]$FechaHoraPrueba, [switch]$AccesoRed)
 if ($HoraReal -and ($SimularDesayuno -or $FechaHoraPrueba)) { throw "Elija hora real o simulacion, no ambas." }
 $ErrorActionPreference = 'Stop'
 $fechaValidada = [DateTimeOffset]::MinValue
@@ -37,8 +37,12 @@ try {
         Write-Host 'Se usara la carpeta de fotos indicada con los permisos de su usuario Windows.'
     }
     $terminalesDemo = @{ SUBESTACION = '172.16.66.230'; PLATAFORMA = '172.16.60.54'; CREI = '172.16.70.68' }
-    $env:Demo__TerminalIp = $terminalesDemo[$Comedor]
-    Write-Host "Comedor de desarrollo seleccionado: $Comedor"
+    $env:Demo__TerminalIp = $null
+    if ($Comedor) {
+        $env:Demo__TerminalIp = $terminalesDemo[$Comedor]
+        Write-Host "IP SIMULADA DE PRUEBA: $env:Demo__TerminalIp - $Comedor. No se usa la IP real del navegador."
+    } else { Write-Host 'IP REAL: se consultara la IP del navegador en la tabla Terminals y se comparara con el comedor del usuario.' }
+    $urlEscucha = if ($AccesoRed) { 'http://0.0.0.0:5080' } else { 'http://127.0.0.1:5080' }
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:Demo__Now = $null
     if ($FechaHoraPrueba) {
@@ -48,10 +52,11 @@ try {
     }
     if ($env:Demo__Now) { Write-Host ("MODO DE PRUEBA: fecha y hora fija {0}. Los registros se guardaran con este valor." -f $env:Demo__Now) }
     else { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
-    Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080 en tu navegador.'
+    if ($AccesoRed) { Write-Host 'Cuando aparezca Now listening on, abre http://IP-DEL-SERVIDOR:5080 desde el equipo del comedor. La IP del navegador debe estar autorizada en Terminals.' }
+    else { Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080. Con IP real, localhost se identifica como 127.0.0.1; para operadores en red usa -AccesoRed y la direccion LAN.' }
     Write-Host 'Acceso inicial de administracion: demo. Para operacion diaria usa una cuenta con su perfil asignado.'
     Write-Host 'Para detener la aplicacion presiona Ctrl+C.'
-    dotnet run --project src/Comedores.Web --no-launch-profile -- --urls http://127.0.0.1:5080 "--Demo:Now=$env:Demo__Now"
+    dotnet run --project src/Comedores.Web --no-launch-profile -- --urls $urlEscucha "--Demo:Now=$env:Demo__Now"
     if ($LASTEXITCODE -ne 0) { throw 'La aplicacion se detuvo con un error. Revisa los mensajes anteriores.' }
 }
 finally {

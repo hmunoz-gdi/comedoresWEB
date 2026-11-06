@@ -133,6 +133,12 @@ try {
   Check(consulted.Window?.Type=="DYN" && saved.Type=="COM" && saved.OccurredAt==UtcAt(new(14,10),22),"Se clasifica al confirmar, aunque se haya consultado al empleado en otro horario");
   var real=new MealService(db,new ConfigurationBuilder().Build(),new DevEnvironment());
   Check(!real.IsSimulated && Math.Abs((real.Now-DateTime.UtcNow).TotalSeconds)<5,"Sin simulación explícita se utiliza hora real UTC");
+  var ipConfig=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"Demo:TerminalIp","172.16.70.68"}}).Build();
+  var production=new MealService(db,ipConfig,new DevEnvironment{EnvironmentName="Production"});
+  Check(!production.IsIpSimulated&&production.ResolveIp(System.Net.IPAddress.Parse("172.16.66.230"))=="172.16.66.230","Producción ignora IP de demostración y conserva la conexión real");
+  Check(real.ResolveIp(System.Net.IPAddress.IPv6Loopback)=="::1"&&real.ResolveIp(System.Net.IPAddress.Parse("::ffff:172.16.66.230"))=="172.16.66.230","IPv6 local se conserva y sólo se normaliza IPv4 mapeada");
+  var simulatedIp=new MealService(db,ipConfig,new DevEnvironment());
+  Check(simulatedIp.IsIpSimulated&&simulatedIp.ResolveIp(System.Net.IPAddress.Parse("127.0.0.1"))=="172.16.70.68","IP simulada sólo se activa explícitamente en desarrollo");
   var overlap=new MealWindow {DiningRoomId=3,Type="COM",Start=new(8,30),End=new(9,30)};db.MealWindows.Add(overlap);await db.SaveChangesAsync();
   var overlapMessage=await Register("40001","10.0.0.3",Guid.NewGuid(),UtcAt(new(9,0)).ToString("O"));
   Check(overlapMessage.Contains("superponen"),"Horarios superpuestos no clasifican arbitrariamente el consumo");

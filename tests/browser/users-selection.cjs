@@ -1,4 +1,4 @@
-// Ejecutar sobre una base aislada: crea dos cuentas ficticias y bloquea una de ellas.
+// Ejecutar sobre una base aislada con terminal de prueba CREI: crea dos cuentas ficticias y bloquea una de ellas.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 (async()=>{
  const base=process.env.TEST_BASE_URL||'http://127.0.0.1:5096',adminPassword=process.env.TEST_DEMO_PASSWORD||fs.readFileSync(path.join(__dirname,'../../.local/demo-password'),'utf8').trim(),password='Aa1!'+crypto.randomBytes(12).toString('hex'),suffix=crypto.randomBytes(4).toString('hex'),operator='selectop'+suffix,catalog='selectcat'+suffix;

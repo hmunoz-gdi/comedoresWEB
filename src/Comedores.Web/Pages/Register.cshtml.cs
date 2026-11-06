@@ -20,6 +20,8 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
  public bool OutsideHours {get;set;}
  public bool EmployeeNotFound {get;set;}
  public bool IsSimulated => meals.IsSimulated;
+ public bool IsIpSimulated=>meals.IsIpSimulated;
+ public string EffectiveIp=>meals.ResolveIp(HttpContext.Connection.RemoteIpAddress);
  public string ServerClock {get;set;}="";
  public string ServerDate {get;set;}="";
  public long ServerEpoch {get;set;}

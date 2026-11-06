@@ -11,7 +11,8 @@
  <p class="server-banner-service">Servicio vigente: <strong id="current-service">@Model.CurrentService</strong> · Ciudad de México</p>
  <div class="server-marquee" aria-hidden="true"><span> SISTEMA INTEGRAL DE COMEDORES · FECHA Y HORA DEL SERVIDOR · REGISTRO ÁGIL DE COMENSALES </span></div>
 </section></div>
-@if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los consumos y reportes guardarán esta hora de prueba.</aside>}
+@if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los registros guardarán esta hora. @if(Model.IsIpSimulated){<span>IP simulada: @Model.EffectiveIp.</span>}</aside>}
+@if(!Model.IsSimulated&&Model.IsIpSimulated){<aside role="status"><strong>IP SIMULADA DE PRUEBA:</strong> @Model.EffectiveIp. El comedor se identifica con esta IP de prueba.</aside>}
 <p id="registration-message" class="notice" role="status" aria-live="polite" hidden="@(Model.Message==null)">@Model.Message</p>
 <div class="registration-workspace"><form method="get" class="filters capture-box" id="lookup-form" data-lookup-url="@Url.Page("/Register","Lookup")">
  <div>

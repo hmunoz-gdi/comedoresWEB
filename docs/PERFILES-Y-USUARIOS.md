@@ -47,13 +47,13 @@ Para cambiar una cuenta operativa, haz clic en su nombre en la tabla de **Usuari
 
 ## Equipos y comedores
 
-La asignación de comedor a una cuenta de operador se combina con la configuración existente de terminales/IP, no la sustituye. El arranque Windows en desarrollo utiliza la IP de demostración de SUBESTACION por defecto; para probar PLATAFORMA o CREI, utiliza la opción `-Comedor` del arranque. Por ejemplo, desde `scripts`:
+La asignación de comedor a una cuenta de operador se combina con la configuración existente de terminales/IP, no la sustituye. El arranque Windows utiliza la IP real de conexión por defecto. Para simular explícitamente un comedor durante pruebas, utiliza la opción `-Comedor` del arranque. Por ejemplo, desde `scripts`:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\iniciar-windows.ps1 -HoraReal -Comedor PLATAFORMA -RutaFotos '\\172.16.2.23\comedor\Fotos'
 ```
 
-Valores: `SUBESTACION` (predeterminado), `PLATAFORMA`, `CREI`. Esta opción es de desarrollo y selecciona una terminal de demostración existente; en producción se valida la IP real autorizada. No basta con cambiar el comedor de la cuenta mientras el equipo sigue identificado como SUBESTACION.
+Valores: `SUBESTACION`, `PLATAFORMA`, `CREI`. Esta opción es de desarrollo y selecciona una terminal de demostración existente; en producción se valida la IP real autorizada. Sin esa opción no se asigna una IP simulada. No basta con cambiar el comedor de la cuenta: su IP real debe estar registrada para ese mismo comedor. El operador se valida antes de iniciar sesión y en cada petición posterior.
 
 La carpeta de fotografías y los permisos de escritura no cambian. Tampoco se borran empleados, consumos, horarios o contraseñas al actualizar. Se utilizan las tablas de roles y claims de Identity que ya existen: no requiere reiniciar el catálogo. La actualización de bloqueo añade una tabla de bitácora sin borrar datos.
 
@@ -66,3 +66,5 @@ Las suites históricas del reloj, registro rápido y vista horizontal deben util
 Consulta [bloqueos y desbloqueos](BLOQUEO-Y-DESBLOQUEO.md): tres intentos fallidos bloquean la cuenta hasta la intervención de administración.
 
 La contraseña de una cuenta seleccionada permanece vacía y deshabilitada: se usa únicamente para crear una cuenta nueva. Seleccionar la cuenta administrativa muestra su estado y conserva protegidos sus perfiles.
+
+Consulta [exclusividad por IP](ACCESO-POR-IP.md) para probar desde la red sin simulación.

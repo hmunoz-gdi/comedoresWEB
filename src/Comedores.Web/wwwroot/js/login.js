@@ -1,6 +1,6 @@
 (()=>{
- const dialog=document.getElementById('account-locked-dialog');
+ const dialog=document.getElementById('account-locked-dialog')||document.getElementById('terminal-rejected-dialog');
  if(!dialog)return;
  dialog.addEventListener('close',()=>{const username=document.getElementById('Username');username.focus();username.select();});
- dialog.showModal();document.getElementById('account-locked-accept').focus();
+ dialog.showModal();dialog.querySelector('button[autofocus]').focus();
 })();

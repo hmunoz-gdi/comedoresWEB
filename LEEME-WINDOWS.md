@@ -15,9 +15,9 @@ Requisitos ya preparados: .NET SDK 10 y PostgreSQL 17 con la base `comedores` va
 5. Introducir la contraseña del usuario `postgres`, elegida durante la instalación de PostgreSQL. No se muestra al escribir y no se guarda en un archivo del proyecto.
 6. Elegir una contraseña para la cuenta `demo` de la aplicación: mínimo 12 caracteres, mayúscula, minúscula, número y símbolo. Es una cuenta distinta del usuario de PostgreSQL. Guardarla de forma privada. En siguientes arranques usar esa contraseña; el script no cambia la contraseña de una cuenta ya creada.
 7. Esperar al mensaje `Now listening on`. Abrir el navegador en `http://localhost:5080`. Esta dirección es de TU computadora con la aplicación en ejecución, no una dirección del entorno de nube.
-8. Entrar con usuario `demo` y su contraseña. En Registrar servicio consultar `40001` o `49001`. Son empleados ficticios. Repetir el registro para ver el consecutivo y revisar Reportes.
+8. Entrar con usuario `demo` y su contraseña. En Registrar servicio consultar `40001` o `49001`. Son empleados ficticios en una instalación nueva. La cuenta administrativa incluye Coordinador: elegir comedor y tipo de servicio antes de registrar.
 
-Mantener la terminal abierta mientras usas la aplicación; Ctrl+C la detiene. El arranque simula la IP de SUBESTACION, pero usa la hora real del servidor convertida a Ciudad de México. Para una prueba explícita de desayuno, agregar `-SimularDesayuno` al comando del paso 3: fija las 08:30 y muestra un aviso visible. Esos consumos se guardan con la hora simulada. `-HoraReal` se conserva como opción compatible, aunque ya es el comportamiento predeterminado.
+Mantener la terminal abierta mientras usas la aplicación; Ctrl+C la detiene. El arranque usa la IP real de la conexión y la hora real del servidor convertida a Ciudad de México. Ya no simula SUBESTACION automáticamente. Para una prueba explícita de desayuno, agregar `-SimularDesayuno` al comando del paso 3: fija las 08:30 y muestra un aviso visible. Esos consumos se guardan con la hora simulada. `-HoraReal` se conserva como opción compatible, aunque ya es el comportamiento predeterminado.
 
 La aplicación crea sus tablas y empleados ficticios en la base vacía. No ejecutar `comedores2026.sql`: es un script del sistema anterior para SQL Server. No importar empleados reales para esta demostración. La lista de funciones pendientes está en README.md.
 
@@ -29,8 +29,10 @@ Al repetir un tipo de servicio en el mismo día aparece un cuadro con el número
 
 Después de actualizar `src` y `scripts`, cierra sesión y entra nuevamente con tu cuenta `demo` y su contraseña habitual. En desarrollo, esta cuenta recibe acceso inicial de administración. Abre **Usuarios y perfiles** para crear cuentas de Operador (con su comedor), Catálogo o Coordinador. Consulta [la guía de perfiles](docs/PERFILES-Y-USUARIOS.md).
 
-Para probar otro comedor en este equipo puedes añadir `-Comedor PLATAFORMA` o `-Comedor CREI` al comando de arranque; por defecto se utiliza SUBESTACION. Esta opción sólo configura la terminal de demostración del entorno de desarrollo. Las cuentas de operador deben coincidir con el comedor seleccionado; los coordinadores eligen el comedor y DYN/COM/CEN al registrar, sin restricción de horario.
+Para simular explícitamente un comedor en este equipo puedes añadir `-Comedor SUBESTACION`, `-Comedor PLATAFORMA` o `-Comedor CREI`. Esta opción sustituye la IP real por una terminal de demostración y muestra un aviso. Sin `-Comedor` se usa IP real. Las cuentas de operador deben coincidir con el comedor seleccionado; los coordinadores eligen el comedor y DYN/COM/CEN al registrar, sin restricción de horario.
 
 ## Fecha y hora de pruebas
 
 Puedes añadir `-FechaHoraPrueba "2026-11-06T14:30:00-06:00"` al comando de arranque para elegir fecha y hora sin editar el script. No lo combines con `-HoraReal`. Detén primero con Ctrl+C; la terminal indicará la ruta del archivo ejecutado y la fecha elegida. Consulta [la guía del reloj](docs/RELOJ-EN-LINEA.md) para ejemplos y diagnóstico de copias antiguas o puerto 5080 ocupado.
+
+Para validar operadores por IP real en la red, utiliza `-AccesoRed` sin `-Comedor`, abre `http://IP-DEL-SERVIDOR:5080` desde el equipo autorizado y consulta [la guía de exclusividad por IP](docs/ACCESO-POR-IP.md). `localhost` se identifica como 127.0.0.1 (o ::1), no como la dirección LAN del equipo.

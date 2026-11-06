@@ -69,5 +69,19 @@ using(var scope=app.Services.CreateScope()) {
   }
  }
 }
-app.UseStaticFiles(); app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.MapRazorPages();
+app.UseStaticFiles(); app.UseRouting(); app.UseAuthentication();
+app.Use(async(context,next)=>{
+ if(context.User.Identity?.IsAuthenticated==true && !context.Request.Path.StartsWithSegments("/Login") && !context.Request.Path.StartsWithSegments("/Denied") && !context.Request.Path.StartsWithSegments("/Error")) {
+  var meals=context.RequestServices.GetRequiredService<MealService>();
+  var denied=await meals.OperatorAccessErrorAsync(context.User,meals.ResolveIp(context.Connection.RemoteIpAddress));
+  if(denied!=null){
+   await context.RequestServices.GetRequiredService<SignInManager<IdentityUser>>().SignOutAsync();
+   var temp=context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataDictionaryFactory>().GetTempData(context);
+   temp["TerminalAccessError"]=denied;temp.Save();
+   context.Response.Redirect(context.Request.PathBase+"/Login");return;
+  }
+ }
+ await next();
+});
+app.UseAuthorization(); app.MapRazorPages();
 app.Run();

@@ -3,11 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 namespace Comedores.Web.Pages;
-public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityUser> users,AppDb db,ILogger<LoginModel> logger) : PageModel {
+public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityUser> users,AppDb db,ILogger<LoginModel> logger,MealService meals) : PageModel {
  [BindProperty] public string Username {get;set;}="";
  [BindProperty] public string Password {get;set;}="";
  public string? Error {get;set;}
  public bool AccountLocked {get;set;}
+ public bool TerminalRejected {get;set;}
+ [TempData] public string? TerminalAccessError{get;set;}
+ public void OnGet(){if(!string.IsNullOrEmpty(TerminalAccessError)){Error=TerminalAccessError;TerminalRejected=true;TerminalAccessError=null;}}
  public async Task<IActionResult> OnPostAsync() {
   if(!ModelState.IsValid) {Error="Capture usuario y contraseña.";return Page();}
   await using var tx=await db.Database.BeginTransactionAsync();
@@ -22,7 +25,17 @@ public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityU
    if(!enabled.Succeeded){Error="No fue posible iniciar sesión. Contacta a la Mesa de Ayuda del AICM, extensión 2442.";return Page();}
   }
   var wasLocked=account!=null&&await users.IsLockedOutAsync(account);
-  var result=await signIn.PasswordSignInAsync(Username.Trim(),Password,false,true);
+  var result=account==null?Microsoft.AspNetCore.Identity.SignInResult.Failed:await signIn.CheckPasswordSignInAsync(account,Password,true);
+  if(result.Succeeded && account!=null) {
+   var principal=await signIn.CreateUserPrincipalAsync(account);
+   var denied=await meals.OperatorAccessErrorAsync(principal,meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
+   if(denied!=null){
+    await tx.CommitAsync();await signIn.SignOutAsync();
+    ModelState.Remove(nameof(Password));Password="";Error=denied;TerminalRejected=true;return Page();
+   }
+   // Conserva el flujo de Identity, incluyendo sus comprobaciones de segundo factor.
+   result=await signIn.PasswordSignInAsync(account,Password,false,true);
+  }
   if(result.IsLockedOut && account!=null) {
    // El bloqueo no vence automáticamente: sólo se retira desde administración.
    var locked=await users.SetLockoutEndDateAsync(account,DateTimeOffset.MaxValue);

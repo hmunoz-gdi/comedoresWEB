@@ -35,7 +35,7 @@ En **Usuarios y perfiles**:
 
 No se muestran ni almacenan contraseñas en texto plano. Las cuentas nuevas reciben sólo el perfil elegido. Los nombres y los perfiles aparecen en la tabla junto al comedor asignado. Comparte las credenciales directamente con cada compañero; no las subas a GitHub.
 
-Para cambiar una cuenta operativa, escribe su usuario, elige el nuevo perfil y el comedor si corresponde, y pulsa **Cambiar perfil**. No se requiere escribir contraseña y ese botón no la cambia. Se sustituyen los permisos operativos anteriores. Las sesiones de esa cuenta se invalidan: debe volver a iniciar sesión. Un fallo al asignar perfiles revierte la operación.
+Para cambiar una cuenta operativa, haz clic en su nombre en la tabla de **Usuarios y perfiles**. Se cargan automáticamente usuario, perfil, comedor y estado. El nombre queda fijo para evitar modificar por accidente otra cuenta. Elige el nuevo perfil y el comedor si corresponde, y pulsa **Cambiar perfil**. La cuenta continúa seleccionada después de guardar. Para crear otra cuenta utiliza **Nuevo / Limpiar**. No se requiere escribir contraseña y ese botón no la cambia. Se sustituyen los permisos operativos anteriores. Las sesiones de esa cuenta se invalidan: debe volver a iniciar sesión. Un fallo al asignar perfiles revierte la operación.
 
 ## Uso diario
 
@@ -64,3 +64,5 @@ La suite `tests/browser/profiles.cjs` usa dos instancias sobre una misma base **
 Las suites históricas del reloj, registro rápido y vista horizontal deben utilizar `TEST_USERNAME` con una cuenta **Operador** asignada al comedor de su terminal y `TEST_DEMO_PASSWORD` con su contraseña. La cuenta inicial `demo` ahora tiene selección manual de Coordinador; no representa el flujo del operador. La suite de empleados requiere Catálogo para las pantallas de empleados y una cuenta con permiso de servicios si prueba el ciclo completo; la cuenta administrativa inicial incluye ambos permisos.
 
 Consulta [bloqueos y desbloqueos](BLOQUEO-Y-DESBLOQUEO.md): tres intentos fallidos bloquean la cuenta hasta la intervención de administración.
+
+La contraseña de una cuenta seleccionada permanece vacía y deshabilitada: se usa únicamente para crear una cuenta nueva. Seleccionar la cuenta administrativa muestra su estado y conserva protegidos sus perfiles.

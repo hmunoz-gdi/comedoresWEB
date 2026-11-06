@@ -7,6 +7,7 @@ public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityU
  [BindProperty] public string Username {get;set;}="";
  [BindProperty] public string Password {get;set;}="";
  public string? Error {get;set;}
+ public bool AccountLocked {get;set;}
  public async Task<IActionResult> OnPostAsync() {
   if(!ModelState.IsValid) {Error="Capture usuario y contraseña.";return Page();}
   await using var tx=await db.Database.BeginTransactionAsync();
@@ -36,6 +37,7 @@ public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityU
   await tx.CommitAsync();
   if(result.Succeeded) return RedirectToPage("/Index");
   ModelState.Remove(nameof(Password));Password="";
+  AccountLocked=result.IsLockedOut;
   Error=result.IsLockedOut?"Cuenta bloqueada. Comunícate con la Mesa de Ayuda del AICM, extensión 2442, para solicitar el desbloqueo.":"No fue posible iniciar sesión. Revisa usuario y contraseña. Si necesitas ayuda, comunícate con la Mesa de Ayuda del AICM, extensión 2442.";return Page();
  }
  public async Task<IActionResult> OnPostLogoutAsync(){await signIn.SignOutAsync();return RedirectToPage("/Login");}

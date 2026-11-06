@@ -9,7 +9,8 @@
     "test:lockout": "node lockout.cjs",
     "test:success": "node success-dialog.cjs",
     "test:not-found": "node employee-not-found.cjs",
-    "test:startup-clock": "node startup-clock.cjs"
+    "test:startup-clock": "node startup-clock.cjs",
+    "test:users-selection": "node users-selection.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

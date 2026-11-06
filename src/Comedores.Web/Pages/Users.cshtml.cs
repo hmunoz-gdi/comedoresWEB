@@ -4,7 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 namespace Comedores.Web.Pages;
+[ResponseCache(NoStore=true,Location=ResponseCacheLocation.None)]
 public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersModel> logger):PageModel {
+ [BindProperty(SupportsGet=true)] public string? SelectedUser{get;set;}
+ public bool ExistingSelected{get;set;}
+ public bool SelectedAdministrator{get;set;}
+ public bool SelectedLocked{get;set;}
  [BindProperty,Required,StringLength(100)] public string Username{get;set;}="";
  [BindProperty] public string? Password{get;set;}
  [BindProperty,Required] public string Profile{get;set;}=AccessProfiles.Operator;
@@ -20,7 +25,14 @@ public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersMo
    var claim=(await users.GetClaimsAsync(account)).FirstOrDefault(c=>c.Type==AccessProfiles.RoomClaim)?.Value;
    var room=int.TryParse(claim,out var id)?Rooms.FirstOrDefault(r=>r.Id==id)?.Name:null;
    Accounts.Add((account.UserName??"",string.Join(", ",await users.GetRolesAsync(account)),room??"—",await users.IsLockedOutAsync(account)));
+   if(!string.IsNullOrWhiteSpace(SelectedUser)&&string.Equals(users.NormalizeName(SelectedUser),account.NormalizedUserName,StringComparison.Ordinal)) {
+    var roles=await users.GetRolesAsync(account);
+    Username=account.UserName??"";ExistingSelected=true;SelectedAdministrator=roles.Contains(AccessProfiles.Admin);SelectedLocked=await users.IsLockedOutAsync(account);
+    Profile=SelectedAdministrator?"":roles.FirstOrDefault(r=>r==AccessProfiles.Coordinator||r==AccessProfiles.Catalog||r==AccessProfiles.Operator)??"";
+    RoomId=int.TryParse(claim,out var roomId)?roomId:null;
+   }
   }
+  if(!string.IsNullOrWhiteSpace(SelectedUser)&&!ExistingSelected)Message="No se encontró la cuenta seleccionada.";
  }
  public async Task<IActionResult> OnPostUnlockAsync(string accountName,string reason) {
   if(string.IsNullOrWhiteSpace(accountName)||accountName.Length>100||string.IsNullOrWhiteSpace(reason)||reason.Trim().Length<5||reason.Length>300){Message="Escribe el motivo del desbloqueo (entre 5 y 300 caracteres), después de verificar la identidad del solicitante.";return RedirectToPage();}
@@ -65,6 +77,7 @@ public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersMo
   var stamp=await users.UpdateSecurityStampAsync(account!);
   if(added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded)await tx.CommitAsync();
   Message=added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded?"Perfil guardado. El usuario debe iniciar sesión nuevamente.":"No se pudo completar la asignación. Revisa el perfil de esta cuenta antes de utilizarla.";
+  if(operation=="profile")return RedirectToPage(new{SelectedUser=Username.Trim()});
   return RedirectToPage();
  }
 }

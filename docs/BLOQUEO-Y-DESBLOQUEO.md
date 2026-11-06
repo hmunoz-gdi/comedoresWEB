@@ -52,3 +52,9 @@ La política también se aplica a cuentas existentes. La validación de intentos
 ## Verificación
 
 `tests/browser/lockout.cjs`, sobre una base aislada, comprueba logos interiores, bloqueo en el tercer intento, reinicio del contador al acertar, denegación aun con contraseña correcta, revocación de sesiones, rechazo de desbloqueo sin motivo o sin permiso, bitácora y concurrencia. La recuperación SQL y la creación de la tabla en una instalación existente se prueban en una base local desechable.
+
+## Cuadro de instrucciones al bloquearse
+
+Al tercer fallo, y también al intentar entrar con una cuenta ya bloqueada, se abre **Cuenta bloqueada**. Indica comunicarse a la Mesa de Ayuda, extensión **2442**, o solicitar la habilitación a **hmunoz@aicm.com.mx** y **mfloreso@aicm.com.mx**. Se pide indicar usuario y comedor, sin compartir contraseñas. No se envían correos automáticamente ni se requiere SMTP. Entendido, Enter o Escape cierran el cuadro y devuelven el foco al usuario.
+
+El desbloqueo administrativo mantiene la contraseña actual; no genera una nueva. La contraseña existente no se puede consultar desde el sistema.

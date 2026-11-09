@@ -23,3 +23,9 @@ El arranque agrega `PickupBatches` y tres campos opcionales en `Consumptions`; n
 ## Validación del desarrollo
 
 Las comprobaciones de `tests/Comedores.Checks` cubren ambas modalidades, responsables, permisos, horarios, rechazo íntegro, avisos y confirmaciones desactualizadas, reintentos, CSV y reinicio con respaldo. `tests/browser/pickup.cjs` usa exclusivamente `comedores_pickup_test` en el puerto 5104, con datos ficticios; prueba teclado, confirmación, cancelación, limpieza, conservación de combos y reintentos concurrentes. No debe apuntarse a una base operativa.
+
+## Servicios para llevar en el reporte
+
+El reporte muestra el **total de servicios para llevar** del periodo y filtros consultados. El resumen agrega la cantidad por fila y el detalle identifica **Para llevar: Sí/No**. Estos datos también se incluyen al imprimir/guardar PDF y en ambos CSV para Excel.
+
+Se considera para llevar el servicio del compañero que recoge otra persona. La comida propia del responsable no se clasifica automáticamente como para llevar. Los encargos ya guardados con su folio y responsable se identifican con esta regla, sin recapturarlos; los registros individuales anteriores conservan su clasificación. El conteo es parte del total de consumos, no un consumo adicional.

@@ -12,6 +12,7 @@ var name="comedores_check_"+Guid.NewGuid().ToString("N");
 var cs=$"Host=127.0.0.1;Username=comedores;Database={name}";
 var options=new DbContextOptionsBuilder<AppDb>().UseNpgsql(cs).Options;
 AppDb Db()=>new(options);
+List<string[]> ParseCsv(byte[] bytes){using var parser=new Microsoft.VisualBasic.FileIO.TextFieldParser(new MemoryStream(bytes),System.Text.Encoding.UTF8,true);parser.SetDelimiters(";");parser.HasFieldsEnclosedInQuotes=true;var parsed=new List<string[]>();while(!parser.EndOfData)parsed.Add(parser.ReadFields()!);return parsed;}
 var checks=0;
 void Check(bool condition,string title){if(!condition)throw new Exception(title);checks++;Console.WriteLine("PASS: "+title);}
 MealService Service(AppDb db,string time="2026-10-19T14:30:00Z")=>new(db,new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"Demo:Now",time}}).Build(),new DevEnvironment());
@@ -69,7 +70,6 @@ try {
  {
   var employee=new Employee{Id=999,Number="00123",Name="Nombre actual"};var room=new DiningRoom{Id=1,Name="PRUEBA"};
   var exported=new[]{1,2}.Select(i=>new Consumption{EmployeeId=999,Employee=employee,DiningRoomId=1,DiningRoom=room,ServiceDate=new(2026,11,9),OccurredAt=new DateTime(2026,11,9,14,i,0,DateTimeKind.Utc),Type="DYN",EmployeeName="Álvarez; \"Prueba\"",Position="Puesto de prueba",SpecialShift=true,DailySequence=i}).ToList();
-  List<string[]> ParseCsv(byte[] bytes){using var parser=new Microsoft.VisualBasic.FileIO.TextFieldParser(new MemoryStream(bytes),System.Text.Encoding.UTF8,true);parser.SetDelimiters(";");parser.HasFieldsEnclosedInQuotes=true;var parsed=new List<string[]>();while(!parser.EndOfData)parsed.Add(parser.ReadFields()!);return parsed;}
   var csv=ReportCsv.Build(exported,false);var detail=ParseCsv(csv);
   Check(csv.AsSpan(0,3).SequenceEqual(new byte[]{239,187,191})&&detail.Count==3&&detail[1][0]=="00123"&&detail[1][1]=="Álvarez; \"Prueba\"","CSV conserva UTF-8, acentos, comillas, separadores y ceros iniciales");
   Check(detail[1][4]=="08:01:00"&&detail[2][5]=="DYN"&&detail[2][9]=="Adicional"&&detail[2][10]=="Sí","Detalle CSV conserva hora local, segmento, adicionales y turno especial");
@@ -210,6 +210,13 @@ try {
   Check((await outside.RegisterAsync(coord,"127.0.0.1",manual)).Ok,"Coordinador registra tipo y comedor elegidos fuera de horario");
   var csv=System.Text.Encoding.UTF8.GetString(ReportCsv.Build(await db.Consumptions.Include(c=>c.Employee).Include(c=>c.DiningRoom).Where(c=>c.PickupBatchId==manual.RequestId).ToListAsync(),false));
   Check(csv.Contains("40001")&&csv.Contains(manual.RequestId.ToString()),"CSV conserva responsable y folio de recogida");
+  Check(rows.Count(c=>c.IsTakeaway)==1&&!rows.Single(c=>c.EmployeeId==1).IsTakeaway,"Sólo el encargo se clasifica para llevar, sin incluir comida propia del responsable");
+  var allPickup=await db.Consumptions.Include(c=>c.Employee).Include(c=>c.DiningRoom).Where(c=>c.PickupBatchId!=null).ToListAsync();
+  var pickupDetail=ParseCsv(ReportCsv.Build(allPickup,false));
+  Check(pickupDetail[0].Last()=="Para llevar"&&pickupDetail.Skip(1).Count(c=>c.Last()=="Sí")==3,"Detalle exporta tres encargos para llevar y excluye comida propia");
+  var pickupSummary=ParseCsv(ReportCsv.Build(allPickup,true));
+  Check(pickupSummary[0].Last()=="Servicios para llevar"&&pickupSummary.Skip(1).Sum(c=>int.Parse(c.Last()))==3,"Resumen exporta cantidades para llevar sin alterar totales de servicios");
+  Check(!new Consumption{Employee=new Employee{Number="40001"}}.IsTakeaway,"Registro individual anterior no se reclasifica como para llevar");
  }
  // Grupos e individuales comparten bloqueo por empleado, incluso con listas en otro orden.
  var concurrentDate=UtcAt(new(9,0),26).ToString("O");

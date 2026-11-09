@@ -32,6 +32,7 @@ public class Consumption {
  public string Ip { get; set; } = "";
  public string Operator { get; set; } = "";
  public int DailySequence { get; set; }
+ public bool IsTakeaway=>PickupBatchId.HasValue && CollectedByNumber!=null && Employee.Number!=CollectedByNumber;
  public Guid? PickupBatchId{get;set;}
  public string? CollectedByNumber{get;set;}
  public string? CollectedByName{get;set;}
@@ -69,6 +70,7 @@ public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<Identity
   b.Entity<Employee>().HasIndex(x=>x.Number).IsUnique();
   b.Entity<Employee>().Ignore(x=>x.Category);
   b.Entity<Terminal>().HasIndex(x=>x.Ip).IsUnique();
+  b.Entity<Consumption>().Ignore(x=>x.IsTakeaway);
   b.Entity<Consumption>().HasOne<PickupBatch>().WithMany().HasForeignKey(x=>x.PickupBatchId).OnDelete(DeleteBehavior.Restrict);
   b.Entity<Consumption>().HasIndex(x=>x.RequestId).IsUnique();
   b.Entity<Consumption>().HasIndex(x=>new {x.EmployeeId,x.ServiceDate,x.DailySequence}).IsUnique();

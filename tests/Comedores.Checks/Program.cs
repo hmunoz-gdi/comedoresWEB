@@ -178,6 +178,54 @@ try {
   var special=await morning.RegisterDetailed("49001","10.0.0.1","pruebas",Guid.NewGuid());
   Check(special.NeedsConfirmation && special.SegmentCount==1,"Turno especial también recibe aviso al repetir segmento, sin calcular cobros");
  }
+ // Recogidas: ambas modalidades, atomicidad, avisos, permisos e idempotencia.
+ await using(var db=Db()) {
+  var op=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name,"op-test"),new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Operator),new System.Security.Claims.Claim(AccessProfiles.RoomClaim,"1")},"test"));
+  var service=new PickupService(db,Service(db,UtcAt(new(9,0),25).ToString("O")));
+  var first=new PickupInput(Guid.NewGuid(),"40001",["40001","49001"]);
+  Check((await service.RegisterAsync(op,"10.0.0.1",first)).Ok,"Recogida incluye comida propia y encargo en una confirmación");
+  var rows=await db.Consumptions.Where(c=>c.PickupBatchId==first.RequestId).ToListAsync();
+  Check(rows.Count==2&&rows.All(c=>c.CollectedByNumber=="40001"&&c.CollectedByName=="Prueba")&&rows.Single(c=>c.EmployeeId==2).SpecialShift,"Cada comensal conserva identidad y turno; responsable común queda registrado");
+  Check((await service.RegisterAsync(op,"10.0.0.1",first)).Ok&&await db.Consumptions.CountAsync(c=>c.PickupBatchId==first.RequestId)==2,"Reintentar grupo no duplica servicios");
+  Check(!(await service.RegisterAsync(op,"10.0.0.1",first with{Numbers=["49001"]})).Ok,"Reutilizar folio con otra lista se rechaza");
+  var only=new PickupInput(Guid.NewGuid(),"40001",["49001"]);
+  var warning=await service.RegisterAsync(op,"10.0.0.1",only);
+  Check(warning.NeedsConfirmation&&warning.Warnings!.Count==1&&!await db.PickupBatches.AnyAsync(b=>b.Id==only.RequestId),"Repetición del grupo avisa sin guardar parcialmente");
+  Check((await service.RegisterAsync(op,"10.0.0.1",only with{ConfirmedType="DYN",ConfirmedCounts=new(){{"49001",1}}})).Ok,"Responsable puede recoger sólo para compañeros sin consumir");
+  Check(await db.Consumptions.CountAsync(c=>c.PickupBatchId==only.RequestId)==1&&!await db.Consumptions.AnyAsync(c=>c.PickupBatchId==only.RequestId&&c.EmployeeId==1),"Recoger sin comida propia no genera servicio al responsable");
+  var stale=await service.RegisterAsync(op,"10.0.0.1",new(Guid.NewGuid(),"40001",["49001"],ConfirmedType:"DYN",ConfirmedCounts:new(){{"49001",1}}));
+  Check(stale.NeedsConfirmation&&stale.Warnings![0].Count==2,"Confirmación antigua requiere revisar nuevamente el contador");
+  var before=await db.Consumptions.CountAsync();
+  foreach(var list in new[]{new[]{"40001","99999"},new[]{"40001","30001"},new[]{"40001","40001"}})
+   Check(!(await service.RegisterAsync(op,"10.0.0.1",new(Guid.NewGuid(),"40001",list.ToList()))).Ok,"Lista inválida, inactiva o duplicada rechazada íntegramente");
+  Check(await db.Consumptions.CountAsync()==before,"Rechazos no dejan registros parciales");
+  Check(!(await service.RegisterAsync(op,"10.0.0.2",new(Guid.NewGuid(),"40001",["49001"]))).Ok,"Operador no puede registrar desde IP de otro comedor");
+  var cat=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Catalog)},"test"));
+  Check(!(await service.RegisterAsync(cat,"10.0.0.1",first)).Ok,"Perfil catálogo no puede registrar grupos");
+  var outside=new PickupService(db,Service(db,UtcAt(new(12,0),25).ToString("O")));
+  Check(!(await outside.RegisterAsync(op,"10.0.0.1",new(Guid.NewGuid(),"40001",["49001"]))).Ok,"Operador conserva restricción de horario al recoger encargos");
+  Check((await outside.RegisterAsync(op,"10.0.0.1",first)).Ok,"Reintento reconoce grupo guardado después de cerrar horario");
+  var coord=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Coordinator)},"test"));
+  var manual=new PickupInput(Guid.NewGuid(),"40001",["49001"],"CEN",2);
+  Check((await outside.RegisterAsync(coord,"127.0.0.1",manual)).Ok,"Coordinador registra tipo y comedor elegidos fuera de horario");
+  var csv=System.Text.Encoding.UTF8.GetString(ReportCsv.Build(await db.Consumptions.Include(c=>c.Employee).Include(c=>c.DiningRoom).Where(c=>c.PickupBatchId==manual.RequestId).ToListAsync(),false));
+  Check(csv.Contains("40001")&&csv.Contains(manual.RequestId.ToString()),"CSV conserva responsable y folio de recogida");
+ }
+ // Grupos e individuales comparten bloqueo por empleado, incluso con listas en otro orden.
+ var concurrentDate=UtcAt(new(9,0),26).ToString("O");
+ var concurrentUser=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name,"coordinador-prueba"),new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,AccessProfiles.Coordinator)},"test"));
+ async Task AddGroup(bool reverse) {
+  await using var db=Db();var service=new PickupService(db,Service(db,concurrentDate));
+  var input=new PickupInput(Guid.NewGuid(),"40001",reverse?["49001","40001"]:["40001","49001"],"DYN",1);
+  var result=await service.RegisterAsync(concurrentUser,"127.0.0.1",input);
+  while(result.NeedsConfirmation){input=input with{ConfirmedType=result.ServiceType,ConfirmedCounts=result.Warnings!.ToDictionary(w=>w.Number,w=>w.Count)};result=await service.RegisterAsync(concurrentUser,"127.0.0.1",input);}
+  if(!result.Ok)throw new Exception(result.Message);
+ }
+ await Task.WhenAll(AddGroup(false),AddGroup(true),Register("40001","10.0.0.1",Guid.NewGuid(),concurrentDate));
+ await using(var db=Db()) {
+  var sequences=await db.Consumptions.Where(c=>c.EmployeeId==1&&c.ServiceDate==new DateOnly(2026,10,26)).OrderBy(c=>c.DailySequence).Select(c=>c.DailySequence).ToListAsync();
+  Check(sequences.SequenceEqual(new[]{1,2,3}),"Grupos concurrentes e individual conservan consecutivos sin interbloqueos");
+ }
  var catalogRoot=Path.Combine(Path.GetTempPath(),"comedores_catalog_"+Guid.NewGuid().ToString("N"));
  Directory.CreateDirectory(catalogRoot);
  try {
@@ -190,11 +238,11 @@ try {
   try {Catalog.Read(csvPath);Check(false,"CSV duplicado debe rechazarse");}catch(InvalidDataException){Check(true,"CSV duplicado se rechaza antes de tocar la base");}
   await File.WriteAllTextAsync(csvPath,header+"1;123;Prueba;;;;;Horario;NO;desconocido\n");
   try {Catalog.Read(csvPath);Check(false,"Estatus desconocido debe rechazarse");}catch(InvalidDataException){Check(true,"Estatus desconocido no se convierte a activo silenciosamente");}
-  int oldMeals,oldEmployees;string protectedBefore;
+  int oldMeals,oldEmployees,oldGroups;string protectedBefore;
   async Task<string> Snapshot(AppDb db)=>JsonSerializer.Serialize(new {Users=await db.Users.AsNoTracking().OrderBy(x=>x.Id).ToListAsync(),Rooms=await db.DiningRooms.AsNoTracking().OrderBy(x=>x.Id).ToListAsync(),Terminals=await db.Terminals.AsNoTracking().OrderBy(x=>x.Id).Select(x=>new{x.Id,x.Ip,x.DiningRoomId}).ToListAsync(),Windows=await db.MealWindows.AsNoTracking().OrderBy(x=>x.Id).ToListAsync()});
   await using(var db=Db()) {
    db.Users.Add(new IdentityUser {Id="keep-user",UserName="operador-prueba",NormalizedUserName="OPERADOR-PRUEBA",PasswordHash="fixture-hash"});
-   await db.SaveChangesAsync();oldMeals=await db.Consumptions.CountAsync();oldEmployees=await db.Employees.CountAsync();protectedBefore=await Snapshot(db);
+   await db.SaveChangesAsync();oldGroups=await db.PickupBatches.CountAsync();oldMeals=await db.Consumptions.CountAsync();oldEmployees=await db.Employees.CountAsync();protectedBefore=await Snapshot(db);
   }
   await using(var db=Db()) {
    try {await CatalogReplacement.ReplaceAsync(db,parsed,()=>throw new IOException("Respaldo de prueba fallido"));Check(false,"Respaldo fallido debe bloquear borrado");}
@@ -208,7 +256,7 @@ try {
   var backupPath=Path.Combine(catalogRoot,"backup.dump");
   await using(var db=Db()) {
    await CatalogReplacement.ReplaceAsync(db,parsed,()=>Backup.CreateAsync(new NpgsqlConnectionStringBuilder(cs),backupPath));
-   Check(await db.Consumptions.CountAsync()==0 && await db.Employees.CountAsync()==3,"Reinicio elimina consumos e importa catálogo completo");
+   Check(await db.Consumptions.CountAsync()==0 && !await db.PickupBatches.AnyAsync() && await db.Employees.CountAsync()==3,"Reinicio elimina consumos e importa catálogo completo");
    Check(await Snapshot(db)==protectedBefore,"Reinicio conserva cuentas, hash, comedores, terminales y horarios");
   }
   var restoreName=name+"_restore";
@@ -223,7 +271,7 @@ try {
    foreach(var argument in new[]{"--exit-on-error","--no-owner","--no-privileges","--host","127.0.0.1","--username","comedores","--dbname",restoreName})psi.ArgumentList.Add(argument);
    using var process=Process.Start(psi)!;var errors=process.StandardError.ReadToEndAsync();var output=process.StandardOutput.ReadToEndAsync();
    await using(var source=File.OpenRead(backupPath)){await source.CopyToAsync(process.StandardInput.BaseStream);}process.StandardInput.Close();await process.WaitForExitAsync();await errors;await output;
-   Check(process.ExitCode==0 && await restored.Employees.CountAsync()==oldEmployees && await restored.Consumptions.CountAsync()==oldMeals && await Snapshot(restored)==protectedBefore,"Respaldo se restaura en otra base y recupera datos previos y cuenta");
+   Check(process.ExitCode==0 && await restored.Employees.CountAsync()==oldEmployees && await restored.Consumptions.CountAsync()==oldMeals && await restored.PickupBatches.CountAsync()==oldGroups && await Snapshot(restored)==protectedBefore,"Respaldo se restaura en otra base y recupera datos previos y cuenta");
   } finally {await restored.Database.EnsureDeletedAsync();}
   var realCsv=Environment.GetEnvironmentVariable("COMEDORES_TEST_CSV");
   if(!string.IsNullOrEmpty(realCsv)) {

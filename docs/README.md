@@ -34,3 +34,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Acceso de operadores por IP y comedor](ACCESO-POR-IP.md)
 
 - [Exportar reportes a CSV y abrirlos en Excel](EXPORTAR-REPORTES.md)
+
+- [Recoger comida para compañeros: responsable y registro por grupo](RECOGIDAS-POR-ENCARGO.md)

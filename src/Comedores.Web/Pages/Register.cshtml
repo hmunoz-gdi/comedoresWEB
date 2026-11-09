@@ -2,7 +2,7 @@
 @model RegisterModel
 @{ViewData["Title"]="Registrar servicio"; ViewData["BodyClass"]=Model.IsCoordinator?"registration-page registration-coordinator":"registration-page"; var e=Model.Employee;}
 <div class="registration-top"><div class="registration-heading"><p class="eyebrow">REGISTRO DE COMENSALES</p>
-<h1>Registrar servicio</h1>
+<h1>Registrar servicio</h1><a asp-page="/Pickup" class="pickup-entry">Recoger para compañeros →</a>
 <p>Comedor: <strong>@(Model.IsCoordinator?"Seleccionar al registrar":Model.Room??"Equipo sin configurar")</strong></p></div>
 <section class="server-banner" data-manual="@(Model.IsCoordinator?"true":"false")" id="server-banner" aria-label="Fecha y hora del servidor" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
  <div class="server-banner-logo"><img src="~/images/grupo-aeroportuario-marina.png" asp-append-version="true" alt="Marina Grupo Aeroportuario" width="1080" height="832"/></div>

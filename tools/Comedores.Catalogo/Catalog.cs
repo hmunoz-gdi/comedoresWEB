@@ -43,6 +43,9 @@ public static class CatalogReplacement {
   await db.Database.ExecuteSqlRawAsync("LOCK TABLE \"Employees\", \"Consumptions\" IN SHARE ROW EXCLUSIVE MODE");
   await createVerifiedBackup(); // Una falla aquí impide cualquier eliminación.
   await db.Consumptions.ExecuteDeleteAsync();
+  await db.Database.ExecuteSqlRawAsync("""
+  DO $$ BEGIN IF to_regclass('"PickupBatches"') IS NOT NULL THEN DELETE FROM "PickupBatches"; END IF; END $$;
+  """);
   await db.Employees.ExecuteDeleteAsync();
   db.Employees.AddRange(catalog.Employees);
   await db.SaveChangesAsync();

@@ -37,3 +37,5 @@ Los campos que podrían interpretarse como fórmulas se neutralizan con un após
 ## Pruebas
 
 Las comprobaciones de .NET verifican BOM, acentos, campos con comillas o separadores, ceros iniciales, horas locales, repetidos, totales, archivos vacíos y protección contra fórmulas. `tests/browser/export-report.cjs` comprueba una descarga real, filtros, permisos de perfiles y rechazo de solicitudes que intenten exportar otro comedor. Debe ejecutarse únicamente contra una base aislada de pruebas con la IP de demostración SUBESTACION.
+
+Las recogidas por encargo agregan **Recogió - número** y **Responsable de recogida**. El detalle agrega **Folio recogida**, común a todos los servicios del grupo. El resumen separa las filas cuando cambia el responsable; los registros anteriores conservan estos campos vacíos.

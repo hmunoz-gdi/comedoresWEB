@@ -1,0 +1,20 @@
+@page
+@model PickupModel
+@{ViewData["Title"]="Recogida para compañeros";ViewData["BodyClass"]="pickup-page";}
+<p class="eyebrow">REGISTRO ÁGIL POR GRUPO</p><h1>Recoger para compañeros</h1>
+<p>Identifica al responsable, agrega los gafetes y confirma todos los servicios una sola vez.</p>
+@if(Model.Simulated){<aside><strong>MODO DE PRUEBA:</strong> se aplican la fecha o IP simuladas configuradas al arrancar.</aside>}
+<a asp-page="/Register">← Volver al registro individual</a>
+<div id="pickup-app" data-lookup="@Url.Page("/Register","Lookup")" data-save="@Url.Page("/Pickup","Save")" data-request="@Guid.NewGuid()">
+<form id="pickup-token" method="post">@Html.AntiForgeryToken()</form>
+<p id="pickup-status" class="notice" role="status" hidden></p>
+<div class="pickup-grid"><section class="panel">
+<h2>1. Quien recoge</h2><form id="collector-form"><label for="collector-number">Número del responsable</label><input id="collector-number" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" required autocomplete="off"/><button>Identificar responsable</button></form>
+<p id="collector-name"></p><label class="check-field"><input id="include-own" type="checkbox" checked/>Incluir también su comida</label>
+<h2>2. Agregar compañeros</h2><form id="member-form"><label for="member-number">Número del compañero</label><input id="member-number" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" required autocomplete="off" disabled/><button id="member-add" disabled>Agregar · Enter</button></form>
+<p class="export-help">Cada Enter agrega un comensal. Ctrl+Enter registra el grupo completo. No se guarda nada hasta confirmar.</p>
+@if(Model.Coordinator){<label for="pickup-room">Comedor</label><select id="pickup-room"><option value="">Selecciona comedor</option>@foreach(var room in Model.Rooms){<option value="@room.Id">@room.Name</option>}</select><label for="pickup-type">Servicio</label><select id="pickup-type"><option value="">Selecciona tipo</option><option value="DYN">DYN · Desayuno</option><option value="COM">COM · Comida</option><option value="CEN">CEN · Cena</option></select>}else{<p>Comedor: <strong>@Model.Room</strong><br/>Servicio al abrir: <strong>@Model.Service</strong></p>}
+</section><section class="panel"><div class="pickup-preview"><img id="pickup-photo" alt="Fotografía del último empleado consultado" hidden/><p id="pickup-person">Verifica el nombre y fotografía al agregar cada gafete.</p></div><h2>Servicios por registrar: <span id="pickup-count">0</span></h2><ul id="pickup-list"></ul><div class="dialog-actions"><button id="pickup-clear" class="secondary" type="button">Limpiar grupo</button><button id="pickup-save" type="button" disabled>Registrar grupo</button></div></section></div>
+</div>
+<dialog id="pickup-dialog" class="registration-dialog" aria-labelledby="pickup-dialog-title"><h2 id="pickup-dialog-title"></h2><p id="pickup-dialog-message"></p><div id="pickup-warnings"></div><form method="dialog" class="dialog-actions"><button value="cancel" id="pickup-cancel" class="secondary" autofocus>Cancelar</button><button value="continue" id="pickup-accept">Continuar</button></form></dialog>
+@section Scripts{<script src="~/js/pickup.js" asp-append-version="true"></script>}

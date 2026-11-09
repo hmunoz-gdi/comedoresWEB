@@ -9,6 +9,13 @@ public class ReportsModel(AppDb db, MealService meals):PageModel {
  [BindProperty(SupportsGet=true)] public string? Category {get;set;}
  public List<DiningRoom> Rooms {get;set;}=[];
  public List<Consumption> Rows {get;set;}=[];
+ public async Task<IActionResult> OnGetCsvAsync(string format="detalle") {
+  Response.Headers.CacheControl="no-store, private";Response.Headers["X-Content-Type-Options"]="nosniff";
+  if(format!="detalle"&&format!="resumen")return BadRequest("Formato de exportación inválido.");
+  await OnGetAsync();
+  if(!ModelState.IsValid)return BadRequest("No se puede exportar: revisa las fechas y el comedor permitido para tu cuenta.");
+  return File(ReportCsv.Build(Rows,format=="resumen"),"text/csv; charset=utf-8",$"Comedores_{format}_{From:yyyyMMdd}_{To:yyyyMMdd}.csv");
+ }
  public async Task OnGetAsync() {
   Rooms=await db.DiningRooms.OrderBy(x=>x.Name).ToListAsync();
   if(!User.IsInRole(AccessProfiles.Coordinator)) {

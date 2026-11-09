@@ -32,3 +32,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Bloqueo de cuentas y desbloqueo administrativo](BLOQUEO-Y-DESBLOQUEO.md)
 
 - [Acceso de operadores por IP y comedor](ACCESO-POR-IP.md)
+
+- [Exportar reportes a CSV y abrirlos en Excel](EXPORTAR-REPORTES.md)

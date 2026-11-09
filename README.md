@@ -102,3 +102,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Bloqueo de cuentas y desbloqueo administrativo](docs/BLOQUEO-Y-DESBLOQUEO.md)
 
 - [Acceso de operadores por IP y comedor](docs/ACCESO-POR-IP.md)
+
+- [Exportar reportes a CSV y abrirlos en Excel](docs/EXPORTAR-REPORTES.md)

@@ -66,6 +66,17 @@ try {
   await report.OnGetAsync();
   Check(report.Rows.Count==1 && report.Rows[0].DailySequence==2,"Reporte filtrado conserva adicional generado en otro comedor");
  }
+ {
+  var employee=new Employee{Id=999,Number="00123",Name="Nombre actual"};var room=new DiningRoom{Id=1,Name="PRUEBA"};
+  var exported=new[]{1,2}.Select(i=>new Consumption{EmployeeId=999,Employee=employee,DiningRoomId=1,DiningRoom=room,ServiceDate=new(2026,11,9),OccurredAt=new DateTime(2026,11,9,14,i,0,DateTimeKind.Utc),Type="DYN",EmployeeName="Álvarez; \"Prueba\"",Position="Puesto de prueba",SpecialShift=true,DailySequence=i}).ToList();
+  List<string[]> ParseCsv(byte[] bytes){using var parser=new Microsoft.VisualBasic.FileIO.TextFieldParser(new MemoryStream(bytes),System.Text.Encoding.UTF8,true);parser.SetDelimiters(";");parser.HasFieldsEnclosedInQuotes=true;var parsed=new List<string[]>();while(!parser.EndOfData)parsed.Add(parser.ReadFields()!);return parsed;}
+  var csv=ReportCsv.Build(exported,false);var detail=ParseCsv(csv);
+  Check(csv.AsSpan(0,3).SequenceEqual(new byte[]{239,187,191})&&detail.Count==3&&detail[1][0]=="00123"&&detail[1][1]=="Álvarez; \"Prueba\"","CSV conserva UTF-8, acentos, comillas, separadores y ceros iniciales");
+  Check(detail[1][4]=="08:01:00"&&detail[2][5]=="DYN"&&detail[2][9]=="Adicional"&&detail[2][10]=="Sí","Detalle CSV conserva hora local, segmento, adicionales y turno especial");
+  var summary=ParseCsv(ReportCsv.Build(exported,true));
+  Check(summary.Count==2&&summary[1][5]=="2"&&summary[1][6]=="08:01:00, 08:02:00"&&summary[1][11]=="1","Resumen CSV cuenta y conserva todas las horas repetidas");
+  Check(new[]{"=1+1"," +SUM(1)","-1+1","@SUM(1)","\t=1+1","\r=1+1","\n=1+1"}.All(v=>ReportCsv.Cell(v).StartsWith("\"'"))&&ParseCsv(ReportCsv.Build([],false)).Count==1,"CSV neutraliza fórmulas y exporta cabecera cuando no hay datos");
+ }
  var privateRoot=Path.Combine(Path.GetTempPath(),"comedores_photos_"+Guid.NewGuid().ToString("N"));
  var env=new DevEnvironment {ContentRootPath=Path.Combine(privateRoot,"src","app")};
  var local=LocalProfile.LocalDirectory(env);

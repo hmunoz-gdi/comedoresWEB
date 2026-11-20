@@ -23,13 +23,13 @@
  <details class="registration-note"><summary>Reglas del servicio</summary><p>Se aplica el horario del comedor. Si repites desayuno, comida o cena se solicita confirmación antes de guardar.</p></details>
 </form>
 <div class="registration-watermark" aria-hidden="true"><img src="~/images/grupo-aeroportuario-marina.png" asp-append-version="true" alt="" width="1080" height="832"/><span class="watermark-acronym">SICOM</span><p>Sistema Integral<br/><strong>de Comedores</strong></p><span>AICM · SERVICIOS AL PERSONAL</span></div>
-<section class="panel employee-card" id="employee-card" data-number="@e?.Number" hidden="@(e==null)">
+<section class="panel employee-card @(e!=null && e.Active!=true?"employee-is-inactive":"")" id="employee-card" data-number="@e?.Number" hidden="@(e==null)">
  <div class="employee-photo">
   <img id="employee-photo" src="@(Model.HasPhoto?Url.Page("/Register","Photo",new {number=e!.Number}):null)" alt="Fotografía del empleado" width="200" height="240" hidden="@(!Model.HasPhoto)"/>
   <div id="photo-placeholder" class="photo-placeholder" hidden="@(Model.HasPhoto)"><span aria-hidden="true">👤</span><p id="photo-label">Sin fotografía</p></div>
  </div>
  <div class="employee-info">
-  <p id="employee-stage" class="eyebrow">COMENSAL CONSULTADO</p>
+  <p id="employee-stage" class="eyebrow">@(e!=null && e.Active!=true?"EMPLEADO DADO DE BAJA":"COMENSAL CONSULTADO")</p>
   <h2 id="employee-name">@(string.IsNullOrWhiteSpace(e?.Name)?"Nombre no disponible en el catálogo":e.Name)</h2>
   <dl>
    <div><dt>Número</dt><dd id="employee-number">@e?.Number</dd></div>
@@ -51,6 +51,12 @@
  <h2 id="not-found-title">Empleado no encontrado</h2>
  <p id="not-found-message">Empleado no encontrado en el catálogo. Revisa el número de empleado.</p>
  <form method="dialog" class="dialog-actions"><button id="not-found-accept" autofocus>Aceptar</button></form>
+</dialog>
+<dialog id="inactive-dialog" class="registration-dialog employee-inactive-dialog" role="alertdialog" data-show="@((e!=null && e.Active!=true)?"true":"false")" aria-labelledby="inactive-title" aria-describedby="inactive-message">
+ <div class="inactive-symbol" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="19"/><path d="M11 11l26 26"/></svg></div>
+ <p class="inactive-kicker">REGISTRO BLOQUEADO</p><h2 id="inactive-title">Empleado dado de baja</h2>
+ <p id="inactive-message">Este empleado está dado de baja en el catálogo. No se permite registrar servicios. Consulta a Recursos Humanos para revisar su situación.</p>
+ <form method="dialog" class="dialog-actions"><button id="inactive-accept" autofocus>Entendido</button></form>
 </dialog>
 <dialog id="success-dialog" class="registration-dialog" aria-labelledby="success-title" aria-describedby="success-message">
  <h2 id="success-title">Servicio aplicado</h2>

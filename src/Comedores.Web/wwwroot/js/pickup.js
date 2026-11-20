@@ -44,7 +44,10 @@
   catch(error){await lookupError(error);}finally{busy=false;render();$('member-number').focus();$('member-number').select();}
  };
  $('include-own').onchange=render;
- async function dialog(title,text,warnings,confirm){
+ async function dialog(title,text,warnings,confirm,inactive=false){
+  $('pickup-dialog').classList.toggle('employee-inactive-dialog',inactive);
+  $('pickup-dialog').setAttribute('role',inactive?'alertdialog':'dialog');
+  $('pickup-inactive-symbol').hidden=!inactive;$('pickup-inactive-kicker').hidden=!inactive;
   $('pickup-dialog-title').textContent=title;$('pickup-dialog-message').textContent=text;
   $('pickup-warnings').replaceChildren(...(warnings||[]).map(w=>{const p=document.createElement('p');p.textContent=w.number+' · '+w.name+': '+w.count+' servicio(s) previos.';return p;}));
   $('pickup-cancel').hidden=!confirm;$('pickup-accept').textContent=confirm?'Continuar':'Aceptar';const d=$('pickup-dialog');d.returnValue='cancel';
@@ -54,7 +57,7 @@
   status(error.message);
   const photo=$('pickup-photo');photo.onload=null;photo.removeAttribute('src');photo.hidden=true;
   $('pickup-person').textContent=error.notFound?'Empleado no encontrado. Revisa el número capturado.':'No fue posible consultar este empleado. Revisa el aviso.';
-  await dialog(error.notFound?'Empleado no encontrado':error.unavailable?'Empleado inactivo':'Consulta no disponible',error.message,null,false);
+  await dialog(error.notFound?'Empleado no encontrado':error.unavailable?'Empleado dado de baja':'Consulta no disponible',error.unavailable?'Este empleado está dado de baja en el catálogo. No se permite incluirlo en la recogida. Consulta a Recursos Humanos para revisar su situación.':error.message,null,false,!!error.unavailable);
  }
  function context(){
   const room=$('pickup-room'),type=$('pickup-type');

@@ -58,6 +58,17 @@
             dialog.showModal(); el('not-found-accept').focus();
         });
     }
+    function warnInactive() {
+        const dialog = el('inactive-dialog');
+        ready = false; button.disabled = true;
+        card.classList.add('employee-is-inactive');
+        el('employee-stage').textContent = 'EMPLEADO DADO DE BAJA';
+        notify('Empleado dado de baja. No se permite registrar servicios. Consulta a Recursos Humanos.');
+        return new Promise(resolve => {
+            dialog.addEventListener('close', resolve, { once: true });
+            dialog.showModal(); el('inactive-accept').focus();
+        });
+    }
     lookup.addEventListener('submit', async event => {
         event.preventDefault();
         if (busy) return;
@@ -80,9 +91,11 @@
                 'employee-special': data.specialShift ? 'Sí' : 'No', 'employee-count': data.todayCount
             })) el(id).textContent = text;
             el('employee-stage').textContent = 'COMENSAL CONSULTADO';
-            card.hidden = false; ready = data.canRegister;
+            card.classList.toggle('employee-is-inactive', data.active !== true);
+            card.hidden = false; ready = data.active === true && data.canRegister;
             showPhoto(data.photoUrl, data.name);
-            if (data.outsideHours) { await warnOutsideHours(data.message); number.select(); }
+            if (data.active !== true) { await warnInactive(); number.select(); }
+            else if (data.outsideHours) { await warnOutsideHours(data.message); number.select(); }
             else notify(data.message);
         } catch (error) { notify(explain(error)); }
         finally { setBusy(false); focus(); }
@@ -169,6 +182,9 @@
     if (el('not-found-dialog').dataset.show === 'true') {
         setBusy(true);
         warnNotFound().then(() => { setBusy(false); focus(); number.select(); });
+    } else if (el('inactive-dialog').dataset.show === 'true') {
+        setBusy(true);
+        warnInactive().then(() => { setBusy(false); focus(); number.select(); });
     } else if (el('hours-dialog').dataset.show === 'true') {
         warnOutsideHours(el('hours-message').textContent).then(() => { focus(); number.select(); });
     }

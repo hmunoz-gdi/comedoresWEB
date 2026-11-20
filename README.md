@@ -108,3 +108,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Contador del servicio, búsqueda por empleado y eliminación con auditoría](docs/CONTADOR-Y-REPORTES.md).
 
 - [Diálogos de empleado no encontrado y grupos de recogida](docs/GRUPOS-DE-RECOGIDA.md).
+
+- [Aviso diferenciado de empleado dado de baja](docs/AVISO-EMPLEADO-BAJA.md).

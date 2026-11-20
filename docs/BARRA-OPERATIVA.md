@@ -26,3 +26,17 @@ El logo `wwwroot/images/grupo-aeroportuario-marina.png` ya forma parte del proye
 Compilar e iniciar con el comando habitual de la base local de pruebas. Actualizar el navegador con Ctrl+F5. Este cambio no se aplica al servidor hasta publicar y desplegar. No requiere cambios de base de datos.
 
 Prueba visual y funcional: `tests/browser/operational-banner.cjs`, exclusivamente con una base aislada. Comprueba selección manual, consulta y guardado con conservación de selección, operador con IP simulada, reloj fijo de prueba, identidad lateral, ausencia de logo en la barra y seis tamaños de pantalla sin desbordamiento. La suite existente `tests/browser/server-clock.cjs` verifica reloj real independiente del cliente, cambios de horario y fecha, desconexión, recuperación, pausa y simulación.
+
+## Captura ampliada y marca de agua
+
+La barra ahora ocupa todo el ancho del contenido principal, debajo de un encabezado con **Registrar servicio** a la izquierda y el botón **Recoger para compañeros** arriba a la derecha. El botón se mantiene separado de Consultar y Registrar para distinguir el flujo individual del de encargos. En pantallas angostas pasa debajo del título sin perder su nombre accesible.
+
+El número de empleado tiene cifras de 38 a 46 píxeles y un campo de 70 a 88 píxeles de alto según el tamaño de pantalla. El área de captura es más ancha. Cuando no se está consultando un empleado, una marca de agua grande muestra el logo de Grupo Aeroportuario y el nombre del sistema; se oculta al mostrar la ficha y reaparece después de limpiar, registrar o no encontrar un empleado. Es decorativa, no recibe clics ni se anuncia al lector de pantalla.
+
+![Captura vacía con marca de agua y firma de desarrollo](capturas/registro-marca-agua.png)
+
+Se propone una firma de autoría discreta en el pie: símbolo de código y circuitos, **Desarrollado por · Desarrollo de Sistemas**, y **Tecnología al servicio de nuestra gente**. La denominación es genérica y queda pendiente sustituirla por el nombre exacto que indique el área. No se añadieron imágenes tecnológicas grandes sobre las fichas: la firma distingue el trabajo del equipo sin competir con la identidad institucional ni la operación.
+
+Si la actualización anterior de barra ya está instalada, esta revisión requiere únicamente `Pages/Register.cshtml`, `Pages/Shared/_Layout.cshtml` y `wwwroot/css/site.css`. El paquete acumulado conserva además los archivos de Inicio y JavaScript de la actualización anterior. No reemplazar Program.cs, configuración local, contraseñas o la base de datos.
+
+Comprobado con consulta y guardado de un servicio ficticio: marca visible en vacío, oculta con ficha, visible después del éxito; conservación de combos, captura ampliada y barra completa. Revisión en seis tamaños de pantalla y compilación sin errores ni advertencias.

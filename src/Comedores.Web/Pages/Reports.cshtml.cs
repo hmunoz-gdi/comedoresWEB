@@ -20,6 +20,7 @@ public class ReportsModel(AppDb db, MealService meals):PageModel {
  }
  public List<DiningRoom> Rooms {get;set;}=[];
  public List<Consumption> Rows {get;set;}=[];
+ public List<PickupReportGroup> PickupGroups {get;set;}=[];
  public async Task<IActionResult> OnGetCsvAsync(string format="detalle") {
   Response.Headers.CacheControl="no-store, private";Response.Headers["X-Content-Type-Options"]="nosniff";
   if(format!="detalle"&&format!="resumen")return BadRequest("Formato de exportación inválido.");
@@ -42,6 +43,7 @@ public class ReportsModel(AppDb db, MealService meals):PageModel {
   if(!ModelState.IsValid) return;
   var q=db.Consumptions.AsNoTracking().Include(x=>x.Employee).Include(x=>x.DiningRoom).Where(x=>x.ServiceDate>=From && x.ServiceDate<=To);
   if(RoomId!=null) q=q.Where(x=>x.DiningRoomId==RoomId);
+  var scope=q; // Conserva el ámbito autorizado para consultar integrantes del grupo completo.
   var search=EmployeeSearch?.Trim();
   if(!string.IsNullOrEmpty(search)) {
    if(EmployeeNumber.IsValid(search))q=q.Where(x=>x.Employee.Number==search);
@@ -53,5 +55,13 @@ public class ReportsModel(AppDb db, MealService meals):PageModel {
   }
   var rows=await q.OrderBy(x=>x.Employee.Number).ThenBy(x=>x.OccurredAt).ToListAsync();
   Rows=rows.Where(x=>string.IsNullOrEmpty(Category)||x.Employee.Category==Category).ToList();
+  var ids=Rows.Where(c=>c.PickupBatchId.HasValue).Select(c=>c.PickupBatchId!.Value).Distinct().ToList();
+  if(ids.Count>0){
+   var members=await scope.Where(c=>c.PickupBatchId.HasValue&&ids.Contains(c.PickupBatchId.Value)).OrderBy(c=>c.Employee.Number).ToListAsync();
+   var batches=await db.PickupBatches.AsNoTracking().Where(g=>ids.Contains(g.Id)).OrderByDescending(g=>g.OccurredAt).ThenBy(g=>g.Id).ToListAsync();
+   PickupGroups=batches.Select(g=>new PickupReportGroup(g,members.Where(c=>c.PickupBatchId==g.Id&&c.DiningRoomId==g.DiningRoomId).ToList())).Where(g=>g.Members.Count>0).ToList();
+  }
  }
 }
+
+public record PickupReportGroup(PickupBatch Batch,List<Consumption> Members);

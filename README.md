@@ -106,3 +106,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Exportar reportes a CSV y abrirlos en Excel](docs/EXPORTAR-REPORTES.md)
 
 - [Contador del servicio, búsqueda por empleado y eliminación con auditoría](docs/CONTADOR-Y-REPORTES.md).
+
+- [Diálogos de empleado no encontrado y grupos de recogida](docs/GRUPOS-DE-RECOGIDA.md).

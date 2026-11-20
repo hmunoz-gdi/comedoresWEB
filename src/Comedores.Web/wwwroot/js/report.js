@@ -15,3 +15,8 @@ document.getElementById('print-report')?.addEventListener('click', () => window.
   const button=event.submitter;if(button)button.disabled=true;
  });
 })();
+
+// Abre la recogida exacta, aunque el responsable tenga varios folios el mismo día.
+document.querySelectorAll('.view-pickup-group').forEach(link=>link.addEventListener('click',()=>{
+ const group=document.getElementById(link.hash.slice(1));if(group){group.open=true;group.querySelector('summary')?.focus();}
+}));

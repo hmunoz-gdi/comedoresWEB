@@ -26,7 +26,7 @@
  async function lookup(number){
   const url=new URL(app.dataset.lookup,location.origin);url.searchParams.set('number',number);
   const data=await json(await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)}));
-  if(!data.ok||!data.active){const error=new Error(data.message||'Empleado inexistente o de baja.');error.notFound=data.notFound===true;throw error;}
+  if(!data.ok||!data.active){const error=new Error(data.message||'Empleado inexistente o de baja.');error.notFound=data.notFound===true||(!data.ok&&/empleado no encontrado|no existe/i.test(data.message||''));error.unavailable=data.ok&&data.active===false;throw error;}
   $('pickup-person').textContent=data.number+' · '+data.name;const photo=$('pickup-photo');photo.hidden=true;photo.onerror=()=>{photo.hidden=true;};photo.onload=()=>{photo.hidden=false;};photo.src=data.photoUrl;return data;
  }
  for(const id of ['collector-number','member-number'])$(id).addEventListener('input',e=>{e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,5);});
@@ -52,11 +52,9 @@
  }
  async function lookupError(error){
   status(error.message);
-  if(error.notFound){
-   const photo=$('pickup-photo');photo.onload=null;photo.removeAttribute('src');photo.hidden=true;
-   $('pickup-person').textContent='Empleado no encontrado. Revisa el número capturado.';
-   await dialog('Empleado no encontrado',error.message,null,false);
-  }
+  const photo=$('pickup-photo');photo.onload=null;photo.removeAttribute('src');photo.hidden=true;
+  $('pickup-person').textContent=error.notFound?'Empleado no encontrado. Revisa el número capturado.':'No fue posible consultar este empleado. Revisa el aviso.';
+  await dialog(error.notFound?'Empleado no encontrado':error.unavailable?'Empleado inactivo':'Consulta no disponible',error.message,null,false);
  }
  function context(){
   const room=$('pickup-room'),type=$('pickup-type');

@@ -11,14 +11,16 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(o=> {
 builder.Services.ConfigureApplicationCookie(o=> { o.LoginPath="/Login"; o.Cookie.HttpOnly=true; });
 builder.Services.AddAuthorization(o=> {
  o.AddPolicy("Services",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator));
+ o.AddPolicy("Reports",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator,AccessProfiles.Admin));
  o.AddPolicy("Catalog",p=>p.RequireRole(AccessProfiles.Catalog));
  o.AddPolicy("Users",p=>p.RequireRole(AccessProfiles.Admin));
 });
 builder.Services.ConfigureApplicationCookie(o=>o.AccessDeniedPath="/Denied");
-builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Services"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
+builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Reports"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
 builder.Services.Configure<SecurityStampValidatorOptions>(o=>o.ValidationInterval=TimeSpan.Zero);
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<PickupService>();
+builder.Services.AddScoped<ConsumptionManagementService>();
 builder.Services.AddScoped<EmployeePhotos>();
 var app = builder.Build();
 if (!app.Environment.IsDevelopment()) { app.UseExceptionHandler("/Error"); app.UseHsts(); app.UseHttpsRedirection(); }
@@ -69,6 +71,7 @@ using(var scope=app.Services.CreateScope()) {
  END IF; END $$;
  CREATE INDEX IF NOT EXISTS "IX_Consumptions_PickupBatchId" ON "Consumptions"("PickupBatchId");
  """);
+ await ConsumptionManagementService.EnsureSchemaAsync(securityDb);
  var roles=scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
  var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
  foreach(var role in AccessProfiles.All)if(!await roles.RoleExistsAsync(role)) {

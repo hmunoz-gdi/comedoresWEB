@@ -2,11 +2,11 @@
 @model RegisterModel
 @{ViewData["Title"]="Registrar servicio"; ViewData["BodyClass"]=Model.IsCoordinator?"registration-page registration-coordinator":"registration-page"; var e=Model.Employee;}
 <div class="registration-top">
-<section class="server-banner" data-manual="@(Model.IsCoordinator?"true":"false")" id="server-banner" aria-label="Hora, comedor y servicio" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
+<section data-service-counter-url="@Url.Page("/Register","ServiceTotal")" data-counter-room-select="CoordinatorRoomId" data-counter-type-select="SelectedServiceType" data-counter-manual="@(Model.IsCoordinator?"true":"false")" data-counter-output="service-total" class="server-banner" data-manual="@(Model.IsCoordinator?"true":"false")" id="server-banner" aria-label="Hora, comedor y servicio" data-clock-url="@Url.Page("/Register","Clock")" data-epoch="@Model.ServerEpoch" data-simulated="@(Model.IsSimulated?"true":"false")">
  <div class="server-banner-top"><span class="banner-system-name">SICOM</span><h1 class="banner-operation-label">Registrar servicio</h1><span id="clock-status" role="status">Sincronizando con el servidor…</span><button type="button" id="clock-motion" class="secondary" aria-pressed="false">Pausar marquesina</button></div>
  <div class="server-banner-main"><span class="banner-field-label">HORA · CIUDAD DE MÉXICO</span><time id="server-clock" aria-live="off">@Model.ServerClock</time><time id="server-date" aria-live="off">@Model.ServerDate</time></div>
  <div class="server-banner-room"><span class="banner-field-label">COMEDOR</span><strong id="current-room">@(Model.IsCoordinator?Model.CoordinatorRooms.FirstOrDefault(r=>r.Id==Model.CoordinatorRoomId)?.Name??"Selecciona comedor":Model.Room??"Sin asignar")</strong><span class="banner-field-note">@(Model.IsCoordinator?"Comedor seleccionado":"Ubicación del servicio")</span></div>
- <div class="server-banner-service"><span class="banner-field-label">@(Model.IsCoordinator?"SERVICIO SELECCIONADO":"SERVICIO VIGENTE")</span><strong id="current-service">@(Model.IsCoordinator?(MealTypes.IsKnown(Model.SelectedServiceType??"")?MealTypes.Name(Model.SelectedServiceType!):"Selecciona servicio"):Model.CurrentService)</strong><span class="banner-field-note">@(Model.IsCoordinator?"Coordinador · selección manual":"Según el horario del comedor")</span></div>
+ <div class="server-banner-service"><span class="banner-field-label">@(Model.IsCoordinator?"SERVICIO SELECCIONADO":"SERVICIO VIGENTE")</span><strong id="current-service">@(Model.IsCoordinator?(MealTypes.IsKnown(Model.SelectedServiceType??"")?MealTypes.Name(Model.SelectedServiceType!):"Selecciona servicio"):Model.CurrentService)</strong><span class="banner-field-note">@(Model.IsCoordinator?"Coordinador · selección manual":"Según el horario del comedor")</span><div class="service-total"><span>SERVICIOS REGISTRADOS</span><strong id="service-total" aria-live="polite">—</strong><small id="service-total-status">Incluye encargos de compañeros</small></div></div>
  <div class="server-marquee" aria-hidden="true"><span> SICOM · SISTEMA INTEGRAL DE COMEDORES · AL SERVICIO DE NUESTRA GENTE · REGISTRO ÁGIL DE COMENSALES </span></div>
 </section><div class="registration-toolbar"><span class="toolbar-system-name">Sistema Integral de Comedores</span><a asp-page="/Pickup" class="pickup-entry pickup-action"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8" cy="7" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 4 5v2"/></svg><span>Recoger para compañeros</span><span aria-hidden="true">→</span></a></div></div>
 @if(Model.IsSimulated){<aside role="status"><strong>MODO DE PRUEBA: HORA SIMULADA.</strong> Los registros guardarán esta hora. @if(Model.IsIpSimulated){<span>IP simulada: @Model.EffectiveIp.</span>}</aside>}
@@ -71,6 +71,7 @@
  </form>
 </dialog>
 @section Scripts {
+ <script src="~/js/service-counter.js" asp-append-version="true"></script>
  <script src="~/js/server-clock.js" asp-append-version="true"></script>
  <script src="~/js/employee-number.js" asp-append-version="true"></script>
  <script src="~/js/quick-registration.js" asp-append-version="true"></script>

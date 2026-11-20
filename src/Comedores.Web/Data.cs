@@ -32,6 +32,10 @@ public class Consumption {
  public string Ip { get; set; } = "";
  public string Operator { get; set; } = "";
  public int DailySequence { get; set; }
+ public bool IsCancelled {get;set;}
+ public DateTime? CancelledAt {get;set;}
+ public string? CancelledBy {get;set;}
+ public string? CancellationReason {get;set;}
  public bool IsTakeaway=>PickupBatchId.HasValue && CollectedByNumber!=null && Employee.Number!=CollectedByNumber;
  public Guid? PickupBatchId{get;set;}
  public string? CollectedByNumber{get;set;}
@@ -71,6 +75,9 @@ public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<Identity
   b.Entity<Employee>().Ignore(x=>x.Category);
   b.Entity<Terminal>().HasIndex(x=>x.Ip).IsUnique();
   b.Entity<Consumption>().Ignore(x=>x.IsTakeaway);
+  b.Entity<Consumption>().HasQueryFilter(x=>!x.IsCancelled);
+  b.Entity<Consumption>().Property(x=>x.IsCancelled).HasDefaultValue(false);
+  b.Entity<Consumption>().HasIndex(x=>new{x.DiningRoomId,x.ServiceDate,x.Type});
   b.Entity<Consumption>().HasOne<PickupBatch>().WithMany().HasForeignKey(x=>x.PickupBatchId).OnDelete(DeleteBehavior.Restrict);
   b.Entity<Consumption>().HasIndex(x=>x.RequestId).IsUnique();
   b.Entity<Consumption>().HasIndex(x=>new {x.EmployeeId,x.ServiceDate,x.DailySequence}).IsUnique();

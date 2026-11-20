@@ -47,6 +47,10 @@ public class RegisterModel(AppDb db,MealService meals,EmployeePhotos photos):Pag
   var date=DateOnly.FromDateTime(MealService.Local(meals.Now));
   TodayCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==Employee.Id && x.ServiceDate==date);
  }
+ public async Task<IActionResult> OnGetServiceTotalAsync(int? roomId,string? serviceType) {
+  Response.Headers.CacheControl="no-store, private";
+  return new JsonResult(await ServiceCounter.ReadAsync(db,meals,User,meals.ResolveIp(HttpContext.Connection.RemoteIpAddress),roomId,serviceType));
+ }
  public async Task<IActionResult> OnGetClockAsync() {
   Response.Headers.CacheControl="no-store, private";
   var terminal=await meals.Terminal(meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));

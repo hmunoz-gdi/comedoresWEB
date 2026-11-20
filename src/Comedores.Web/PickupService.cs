@@ -23,7 +23,11 @@ public class PickupService(AppDb db,MealService meals) {
   var requestLock=System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(SHA256.HashData(input.RequestId.ToByteArray()))|long.MinValue;
   await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({requestLock})");
   var saved=await db.PickupBatches.AsNoTracking().SingleOrDefaultAsync(b=>b.Id==input.RequestId);
-  if(saved!=null)return saved.Operator==actor&&saved.Ip==ip&&saved.Fingerprint==fingerprint?new(true,$"Recogida ya registrada: {saved.Count} servicios · {MealService.Local(saved.OccurredAt):dd/MM/yyyy HH:mm:ss}. No se duplicaron."):new(false,"Este identificador ya se utilizó para otra recogida.");
+  if(saved!=null){
+   if(saved.Operator!=actor||saved.Ip!=ip||saved.Fingerprint!=fingerprint)return new(false,"Este identificador ya se utilizó para otra recogida.");
+   var active=await db.Consumptions.CountAsync(c=>c.PickupBatchId==saved.Id);
+   return new(true,$"Recogida procesada previamente: {active} servicios vigentes, {saved.Count-active} eliminados. No se duplicaron.");
+  }
   var allNumbers=input.Numbers.Append(input.CollectorNumber).Distinct().ToList();
   var people=await db.Employees.Where(e=>allNumbers.Contains(e.Number)).ToListAsync();
   // Mismos bloqueos que el registro individual, ordenados para evitar interbloqueos.
@@ -37,7 +41,7 @@ public class PickupService(AppDb db,MealService meals) {
   var counts=await db.Consumptions.Where(c=>ids.Contains(c.EmployeeId)&&c.ServiceDate==date&&c.Type==type).GroupBy(c=>c.EmployeeId).Select(g=>new{Id=g.Key,Count=g.Count()}).ToDictionaryAsync(x=>x.Id,x=>x.Count);
   var warnings=selected.Where(e=>counts.GetValueOrDefault(e.Id)>0).Select(e=>new PickupWarning(e.Number,e.Name,counts[e.Id])).ToList();
   if(warnings.Any(w=>input.ConfirmedType!=type||input.ConfirmedCounts==null||!input.ConfirmedCounts.TryGetValue(w.Number,out var accepted)||accepted!=w.Count))return new(false,"Hay servicios previos en este segmento. Revisa antes de continuar.",true,type,warnings);
-  var sequences=await db.Consumptions.Where(c=>ids.Contains(c.EmployeeId)&&c.ServiceDate==date).GroupBy(c=>c.EmployeeId).Select(g=>new{Id=g.Key,Last=g.Max(c=>c.DailySequence)}).ToDictionaryAsync(x=>x.Id,x=>x.Last);
+  var sequences=await db.Consumptions.IgnoreQueryFilters().Where(c=>ids.Contains(c.EmployeeId)&&c.ServiceDate==date).GroupBy(c=>c.EmployeeId).Select(g=>new{Id=g.Key,Last=g.Max(c=>c.DailySequence)}).ToDictionaryAsync(x=>x.Id,x=>x.Last);
   db.PickupBatches.Add(new(){Id=input.RequestId,CollectorNumber=collector.Number,CollectorName=collector.Name,DiningRoomId=room.Id,Type=type!,OccurredAt=now,Operator=actor,Ip=ip,Fingerprint=fingerprint,Count=selected.Count});
   foreach(var person in selected)db.Consumptions.Add(new(){RequestId=Guid.NewGuid(),EmployeeId=person.Id,DiningRoomId=room.Id,OccurredAt=now,ServiceDate=date,Type=type!,SpecialShift=person.SpecialShift,EmployeeName=person.Name,Position=person.Position,Ip=ip,Operator=actor,DailySequence=sequences.GetValueOrDefault(person.Id)+1,PickupBatchId=input.RequestId,CollectedByNumber=collector.Number,CollectedByName=collector.Name});
   await db.SaveChangesAsync();await tx.CommitAsync();

@@ -7,5 +7,6 @@ public static class AccessProfiles {
  public static readonly string[] All=[Operator,Catalog,Coordinator,Admin];
  public static bool Services(ClaimsPrincipal user)=>user.IsInRole(Operator)||user.IsInRole(Coordinator);
  public static bool Employees(ClaimsPrincipal user)=>user.IsInRole(Catalog);
- public static bool Reports(ClaimsPrincipal user)=>Services(user);
+ public static bool Reports(ClaimsPrincipal user)=>Services(user)||user.IsInRole(Admin);
+ public static bool ManageConsumptions(ClaimsPrincipal user)=>user.IsInRole(Coordinator)||user.IsInRole(Admin);
 }

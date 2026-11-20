@@ -118,6 +118,7 @@
             if (data.outsideHours) { await warnOutsideHours(data.message); number.select(); }
             else notify(data.message);
             if (data.ok) {
+                document.dispatchEvent(new Event("sicom:service-saved"));
                 ready = false; loadedNumber = ''; number.value = '';
                 el('registration-number').value = ''; el('RequestId').value = '';
                 // Conserva comedor y tipo para atender grupos sin repetir la selección.

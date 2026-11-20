@@ -55,14 +55,15 @@ public class MealService(AppDb db, IConfiguration config, IWebHostEnvironment en
   await using var tx=await db.Database.BeginTransactionAsync();
   // Serializa registros simultáneos del mismo empleado, incluso desde otros comedores.
   await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({(long)employee.Id})");
-  var existing=await db.Consumptions.AsNoTracking().SingleOrDefaultAsync(x=>x.RequestId==request);
+  var existing=await db.Consumptions.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(x=>x.RequestId==request);
+  if(existing?.IsCancelled==true)return new("Esta solicitud corresponde a un servicio eliminado. Consulta nuevamente para generar otro registro.");
   if(existing!=null) return existing.EmployeeId==employee.Id?new("Esta solicitud ya fue registrada; no se duplicó el consumo.",Ok:true):new("La solicitud pertenece a otro empleado; vuelve a consultar.");
   var period=coordinator?(Window:new MealWindow{Type=selectedType!},Error:(string?)null,OutsideHours:false):await PeriodAtAsync(terminal.DiningRoomId,now);
   if(period.Window==null) return new(period.Error!,OutsideHours:period.OutsideHours);
   var segmentCount=await db.Consumptions.CountAsync(x=>x.EmployeeId==employee.Id && x.ServiceDate==date && x.Type==period.Window.Type);
   if(segmentCount>0 && (confirmedSegmentCount!=segmentCount || confirmedServiceType!=period.Window.Type))
    return new($"El empleado {employee.Number} ya tiene {segmentCount} {(segmentCount==1?"servicio":"servicios")} de {MealTypes.Name(period.Window.Type).ToUpperInvariant()} hoy, sumando todos los comedores. ¿Deseas registrar otro?",NeedsConfirmation:true,SegmentCount:segmentCount,ServiceType:period.Window.Type);
-  var sequence=(await db.Consumptions.Where(x=>x.EmployeeId==employee.Id && x.ServiceDate==date).MaxAsync(x=>(int?)x.DailySequence)??0)+1;
+  var sequence=(await db.Consumptions.IgnoreQueryFilters().Where(x=>x.EmployeeId==employee.Id && x.ServiceDate==date).MaxAsync(x=>(int?)x.DailySequence)??0)+1;
   db.Consumptions.Add(new Consumption {RequestId=request,EmployeeId=employee.Id,DiningRoomId=terminal.DiningRoomId,OccurredAt=now,ServiceDate=date,Type=period.Window.Type,SpecialShift=employee.SpecialShift,EmployeeName=employee.Name,Position=employee.Position,Ip=ip,Operator=user,DailySequence=sequence});
   await db.SaveChangesAsync(); await tx.CommitAsync();
   return new($"Servicio registrado. {MealTypes.Name(period.Window.Type)} · {local:dd/MM/yyyy HH:mm:ss} · Servicio {sequence} del día"+(sequence>1?" · adicional.":" · primero del día."),Ok:true);

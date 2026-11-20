@@ -82,7 +82,7 @@
     if(!await dialog('Servicios repetidos',data.message,data.warnings,true)){status('Registro cancelado: no se guardó ningún servicio del grupo.');return;}
     payload.confirmedType=data.serviceType;payload.confirmedCounts=Object.fromEntries(data.warnings.map(w=>[w.number,w.count]));data=await send();uncertain=false;
    }
-   if(data.ok){uncertain=false;request=data.nextRequestId;await dialog('Servicio aplicado',data.message,null,false);clear();}else status(data.message);
+   if(data.ok){document.dispatchEvent(new Event("sicom:service-saved"));uncertain=false;request=data.nextRequestId;await dialog('Servicio aplicado',data.message,null,false);clear();}else status(data.message);
   }catch(error){uncertain=true;status(error.message+' Conservamos el grupo. Reintenta esta misma solicitud para confirmar el resultado sin duplicar servicios.');}
   finally{busy=false;render();if(!collector)$('collector-number').focus();}
  };

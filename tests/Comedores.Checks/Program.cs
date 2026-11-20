@@ -288,6 +288,39 @@ try {
    Check(await target.Employees.CountAsync()==full.Employees.Count && await target.Employees.CountAsync(x=>x.Active==true)==full.Active && !await target.Consumptions.AnyAsync() && await Snapshot(target)==protectedBefore,"Carga completa del CSV en base temporal conserva configuración y coincide en totales");
   }
  } finally {Directory.Delete(catalogRoot,true);}
+ // Base independiente para conteos, cancelación y reintentos posteriores a eliminar.
+ var cancelOptions=new DbContextOptionsBuilder<AppDb>().UseNpgsql(cs+"_cancellation").Options;
+ await using(var db=new AppDb(cancelOptions))try{
+  await db.Database.EnsureCreatedAsync();await ConsumptionManagementService.EnsureSchemaAsync(db);
+  db.DiningRooms.AddRange(new DiningRoom{Id=1,Name="SUBESTACION"},new DiningRoom{Id=2,Name="PLATAFORMA"});
+  db.Terminals.Add(new Terminal{Ip="10.0.0.1",DiningRoomId=1});
+  db.MealWindows.AddRange(new MealWindow{DiningRoomId=1,Type="DYN",Start=new(8,0),End=new(11,0)},new MealWindow{DiningRoomId=1,Type="COM",Start=new(14,0),End=new(18,0)});
+  db.Employees.AddRange(new Employee{Id=1,Number="40001",Name="Persona Uno",Active=true},new Employee{Id=2,Number="40002",Name="Persona Dos",Active=true});await db.SaveChangesAsync();
+  System.Security.Claims.ClaimsPrincipal Identity(string role)=>new(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name,"prueba-gestion"),new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,role),new System.Security.Claims.Claim(AccessProfiles.RoomClaim,"1")},"test"));
+  var op=Identity(AccessProfiles.Operator);var admin=Identity(AccessProfiles.Admin);var coord=Identity(AccessProfiles.Coordinator);var morning=Service(db);var requestId=Guid.NewGuid();
+  Check((await morning.RegisterDetailed("40001","10.0.0.1","prueba-gestion",requestId)).Ok,"Registro individual para probar contador");
+  var group=new PickupInput(Guid.NewGuid(),"40001",["40002"]);var pickup=new PickupService(db,morning);
+  Check((await pickup.RegisterAsync(op,"10.0.0.1",group)).Ok,"Encargo guardado para probar contador");
+  await db.Database.ExecuteSqlRawAsync("""ALTER TABLE "Consumptions" DROP COLUMN "IsCancelled", DROP COLUMN "CancelledAt", DROP COLUMN "CancelledBy", DROP COLUMN "CancellationReason";""");
+  await ConsumptionManagementService.EnsureSchemaAsync(db);await ConsumptionManagementService.EnsureSchemaAsync(db);
+  Check(await db.Consumptions.CountAsync()==2,"Actualización aditiva e idempotente conserva registros existentes");
+  Check((await ServiceCounter.ReadAsync(db,morning,op,"10.0.0.1",2,"COM")).Count==2,"Contador incluye individual y encargo e ignora comedor/servicio falsificados por operador");
+  Check((await ServiceCounter.ReadAsync(db,Service(db,"2026-10-19T20:30:00Z"),op,"10.0.0.1",null,null)).Count==0,"Corte automático al siguiente servicio");
+  Check((await ServiceCounter.ReadAsync(db,Service(db,"2026-10-20T14:30:00Z"),op,"10.0.0.1",null,null)).Count==0,"Corte por fecha local");
+  Check((await ServiceCounter.ReadAsync(db,Service(db,"2026-10-19T18:00:00Z"),op,"10.0.0.1",null,null)).Count==null,"Sin conteo vigente fuera de horario");
+  Check((await ServiceCounter.ReadAsync(db,morning,coord,"sin-terminal",2,"DYN")).Count==0,"Coordinador consulta el comedor y servicio seleccionados");
+  var row=await db.Consumptions.SingleAsync(x=>x.RequestId==requestId);var management=new ConsumptionManagementService(db);
+  Check(!(await management.CancelAsync(op,row.Id,"Registro equivocado")).Ok&&!(await management.CancelAsync(Identity(AccessProfiles.Catalog),row.Id,"Registro equivocado")).Ok,"Operador y catálogo no pueden eliminar");
+  Check(!(await management.CancelAsync(admin,row.Id," ")).Ok,"Eliminación requiere motivo válido");
+  Check((await management.CancelAsync(admin,row.Id,"Prueba de servicio duplicado")).Ok,"Administrador elimina registro con auditoría");
+  Check((await ServiceCounter.ReadAsync(db,morning,op,"10.0.0.1",null,null)).Count==1&&await db.AccountSecurityEvents.CountAsync()==1,"Eliminación descuenta contador y crea un evento");
+  Check(!(await management.CancelAsync(coord,row.Id,"Otro intento")).Ok&&await db.AccountSecurityEvents.CountAsync()==1,"Eliminación repetida no duplica auditoría");
+  Check(!(await morning.RegisterDetailed("40001","10.0.0.1","prueba-gestion",requestId)).Ok,"Reintentar solicitud eliminada no resucita el registro");
+  Check((await morning.RegisterDetailed("40001","10.0.0.1","prueba-gestion",Guid.NewGuid())).Ok&&await db.Consumptions.AnyAsync(x=>x.EmployeeId==1&&x.DailySequence==2),"Nuevo registro conserva consecutivo único después de eliminar");
+  var carried=await db.Consumptions.SingleAsync(x=>x.PickupBatchId==group.RequestId);Check((await management.CancelAsync(coord,carried.Id,"Encargo equivocado")).Ok,"Coordinador elimina encargo individual");
+  Check((await pickup.RegisterAsync(op,"10.0.0.1",group)).Ok&&!await db.Consumptions.AnyAsync(x=>x.PickupBatchId==group.RequestId),"Reintento de grupo eliminado conserva folio sin recrear consumos");
+  Check(await db.Consumptions.IgnoreQueryFilters().CountAsync()==3&&await db.Consumptions.CountAsync()==1,"Historial conserva eliminados y consultas normales los excluyen");
+ }finally{await db.Database.EnsureDeletedAsync();}
  Console.WriteLine($"{checks} comprobaciones completadas.");
 } finally { await using var db=Db(); await db.Database.EnsureDeletedAsync(); NpgsqlConnection.ClearAllPools(); }
 class DevEnvironment:IWebHostEnvironment {

@@ -22,6 +22,7 @@
     }
     roomSelect?.addEventListener('change', renderSelection);
     serviceSelect?.addEventListener('change', renderSelection);
+    let lastContext;
     function render() {
         renderSelection();
         // Avanza desde la última hora recibida; no depende del reloj configurado en el navegador.
@@ -36,6 +37,8 @@
             const label = !roomConfigured ? 'Equipo sin comedor autorizado' : matches.length === 0 ? 'Fuera de horario' : matches.length > 1 ? 'Horarios superpuestos' : !matches[0].known ? 'Tipo de servicio sin configurar' : matches[0].name;
             update(service, label);
         }
+        const context=date.textContent+'|'+service.textContent;
+        if(context!==lastContext){lastContext=context;document.dispatchEvent(new Event('sicom:service-context-changed'));}
     }
     async function synchronize() {
         if (pending || document.hidden) return;

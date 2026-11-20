@@ -1,6 +1,6 @@
 # Diseño de inicio: alimentos y comedor
 
-La cabecera presenta un plato servido sobre fondo azul institucional y una sección inferior muestra personas compartiendo alimentos en un comedor industrial. Ambas imágenes son ilustraciones fotográficas generadas para el diseño; no documentan instalaciones ni personal reales del AICM. Se conserva la identidad de Marina y todos los permisos y destinos de los accesos. El icono de avión se sustituye por una campana de servicio y el fondo de acceso utiliza la nueva imagen gastronómica.
+La cabecera presenta un plato servido sobre fondo azul institucional y una sección inferior muestra personas compartiendo alimentos en un comedor industrial, con chalecos verdes de seguridad, franjas reflejantes y polos azul marino con el emblema de Grupo Aeroportuario Marina. Ambas imágenes son ilustraciones fotográficas generadas para el diseño; no documentan instalaciones ni personal reales del AICM. Se conserva la identidad de Marina y todos los permisos y destinos de los accesos. El icono de avión se sustituye por una campana de servicio y el fondo de acceso utiliza la nueva imagen gastronómica.
 
 ![Inicio del sistema con alimentos y comedor](capturas/inicio-comidas.png)
 

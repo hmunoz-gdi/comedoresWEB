@@ -1,9 +1,10 @@
 (()=>{
  const $=id=>document.getElementById(id),root=document.querySelector('.employee-admin');if(!root)return;
+ const missing=$('employee-not-found-dialog');if(missing?.dataset.show==='true'){missing.addEventListener('close',()=>{$('Number').focus();$('Number').select();},{once:true});missing.showModal();}
  const exists=root.dataset.exists==='true';let stream=null,blob=null,previewUrl=null,busy=false,starting=false;
  const fields=$('employee-fields'),photoStatus=$('camera-status');
  function edit(create){fields.disabled=false;$('save-employee').disabled=false;$('edit-employee').disabled=true;$('deactivate-employee').disabled=true;$('new-employee').disabled=true;$('employee-mode').textContent=create?'Alta: completa los datos y pulsa Guardar datos.':'Modificación: realiza los cambios y pulsa Guardar datos.';(create?$('Data_Number'):$('Data_Name')).focus();}
- $('new-employee').onclick=()=>{if(exists){location.href='/Employees?New=1';return;}edit(true);$('Data_Number').value=$('Number').value;};
+ $('new-employee').onclick=()=>{if(exists){location.href='/Employees?New=1';return;}$('Data_Number').value=$('Number').value;edit(true);};
  // Nuevo siempre abre un formulario vacío; el número se puede capturar nuevamente.
  if(new URLSearchParams(location.search).get('New')==='1'&&exists){location.replace('/Employees?New=1');return;}
  if(new URLSearchParams(location.search).get('New')==='1'||root.dataset.editing==='true')edit(!exists);

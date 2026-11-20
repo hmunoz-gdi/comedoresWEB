@@ -1,8 +1,8 @@
 @page
 @model Comedores.Web.Pages.EmployeesModel
 @{ViewData["Title"]="Empleados";ViewData["BodyClass"]="employees-page";var exists=Model.Employee!=null;}
-<div class="employee-admin-heading"><div><p class="eyebrow">CATÁLOGO DEL PERSONAL</p><h1>Empleados y fotografías</h1></div><p>Alta · Modificación · Baja</p></div>
-@if(Model.Message!=null){<p class="notice" role="status">@Model.Message</p>}
+<section class="module-banner employee-admin-heading"><div><p class="eyebrow">SICOM · CATÁLOGO DEL PERSONAL</p><h1>Empleados y fotografías</h1><p class="module-description">Identidad y datos del personal en un solo lugar.</p></div><div class="employee-module-badge"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="8" width="24" height="19" rx="3"/><path d="M11 8l2-4h6l2 4"/><circle cx="16" cy="17" r="6"/></svg><span>ALTAS · CAMBIOS · BAJAS<strong>Catálogo del personal</strong></span></div></section>
+@if(Model.Message!=null){<p class="notice" role="status" hidden="@(Model.EmployeeNotFound)">@Model.Message</p>}
 <form method="get" class="filters employee-search"><div><label for="Number">Número de empleado</label><input name="Number" id="Number" value="@Model.Number" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" required autocomplete="off"/></div><button>Consultar</button><button type="button" class="secondary" id="new-employee">Nuevo</button></form>
 <div class="employee-admin" data-exists="@(exists?"true":"false")" data-editing="@(!ViewData.ModelState.IsValid?"true":"false")" data-photo-url="@Url.Page("/Employees","Photo",new{number=Model.Data.Number})">
 <section class="panel camera-panel"><h2>Fotografía del empleado</h2><div class="camera-frame"><img id="saved-photo" alt="Fotografía del empleado" hidden="@(!exists)"/><video id="camera-preview" autoplay playsinline muted hidden></video><img id="captured-photo" alt="Fotografía pendiente de guardar" hidden/><p id="camera-placeholder">Consulta o guarda al empleado para agregar su fotografía.</p></div>
@@ -18,4 +18,5 @@
 <form method="post" asp-page-handler="Deactivate" id="deactivate-form"><input type="hidden" name="Original" value="@Model.Original"/><input type="hidden" name="employeeNumber" value="@Model.Data.Number"/></form>
 </section></div>
 <dialog id="deactivate-dialog" class="registration-dialog" aria-labelledby="deactivate-title"><h2 id="deactivate-title">Dar de baja al empleado</h2><p>Se desactivará su acceso a servicios. Su historial y fotografía se conservarán. ¿Deseas continuar?</p><form method="dialog" class="dialog-actions"><button value="cancel" class="secondary" autofocus>Cancelar</button><button value="confirm">Confirmar baja</button></form></dialog>
+<dialog id="employee-not-found-dialog" class="registration-dialog" data-show="@(Model.EmployeeNotFound?"true":"false")" aria-labelledby="employee-not-found-title"><h2 id="employee-not-found-title">Empleado no encontrado</h2><p>Revisa el número de empleado. Si necesitas registrarlo, utiliza Nuevo después de cerrar este mensaje.</p><form method="dialog" class="dialog-actions"><button autofocus>Aceptar</button></form></dialog>
 @section Scripts{<script src="~/js/employee-number.js" asp-append-version="true"></script><script src="~/js/employees.js" asp-append-version="true"></script>}

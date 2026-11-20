@@ -26,7 +26,7 @@
  async function lookup(number){
   const url=new URL(app.dataset.lookup,location.origin);url.searchParams.set('number',number);
   const data=await json(await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)}));
-  if(!data.ok||!data.active)throw new Error(data.message||'Empleado inexistente o de baja.');
+  if(!data.ok||!data.active){const error=new Error(data.message||'Empleado inexistente o de baja.');error.notFound=data.notFound===true;throw error;}
   $('pickup-person').textContent=data.number+' · '+data.name;const photo=$('pickup-photo');photo.hidden=true;photo.onerror=()=>{photo.hidden=true;};photo.onload=()=>{photo.hidden=false;};photo.src=data.photoUrl;return data;
  }
  for(const id of ['collector-number','member-number'])$(id).addEventListener('input',e=>{e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,5);});
@@ -34,14 +34,14 @@
  $('collector-form').onsubmit=async e=>{
   e.preventDefault();if(busy||uncertain||collector)return;busy=true;controls();
   try{collector=await lookup($('collector-number').value);members=[];$('collector-name').textContent='Responsable: '+collector.number+' · '+collector.name;status('Agrega los números de sus compañeros.');}
-  catch(error){collector=null;status(error.message);}
-  finally{busy=false;render();if(collector)$('member-number').focus();}
+  catch(error){collector=null;await lookupError(error);}
+  finally{busy=false;render();if(collector)$('member-number').focus();else{$('collector-number').focus();$('collector-number').select();}}
  };
  $('member-form').onsubmit=async e=>{
   e.preventDefault();if(busy||uncertain||!collector)return;const number=$('member-number').value;
   if(number===collector.number||members.some(m=>m.number===number)){status('Este empleado ya está incluido. Para el responsable utiliza Incluir también su comida.');$('member-number').select();return;}
   busy=true;controls();try{members.push(await lookup(number));$('member-number').value='';status('Agregado. Puedes leer el siguiente gafete o registrar el grupo.');}
-  catch(error){status(error.message);}finally{busy=false;render();$('member-number').focus();$('member-number').select();}
+  catch(error){await lookupError(error);}finally{busy=false;render();$('member-number').focus();$('member-number').select();}
  };
  $('include-own').onchange=render;
  async function dialog(title,text,warnings,confirm){
@@ -50,6 +50,20 @@
   $('pickup-cancel').hidden=!confirm;$('pickup-accept').textContent=confirm?'Continuar':'Aceptar';const d=$('pickup-dialog');d.returnValue='cancel';
   return new Promise(resolve=>{d.addEventListener('close',()=>resolve(d.returnValue==='continue'),{once:true});d.showModal();(confirm?$('pickup-cancel'):$('pickup-accept')).focus();});
  }
+ async function lookupError(error){
+  status(error.message);
+  if(error.notFound){
+   const photo=$('pickup-photo');photo.onload=null;photo.removeAttribute('src');photo.hidden=true;
+   $('pickup-person').textContent='Empleado no encontrado. Revisa el número capturado.';
+   await dialog('Empleado no encontrado',error.message,null,false);
+  }
+ }
+ function context(){
+  const room=$('pickup-room'),type=$('pickup-type');
+  if(room)$('pickup-room-label').textContent=room.value?room.selectedOptions[0].textContent.trim():'Selecciona comedor';
+  if(type)$('pickup-service-label').textContent=({DYN:'Desayuno',COM:'Comida',CEN:'Cena'})[type.value]||'Selecciona servicio';
+ }
+ $('pickup-room')?.addEventListener('change',context);$('pickup-type')?.addEventListener('change',context);context();
  function clear(){
   collector=null;members=[];$('include-own').checked=true;$('collector-number').value='';$('collector-name').textContent='';$('member-number').value='';
   $('pickup-photo').onload=null;$('pickup-photo').removeAttribute('src');$('pickup-photo').hidden=true;

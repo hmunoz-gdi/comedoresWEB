@@ -40,3 +40,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Diseño gastronómico: platos servidos y ambiente de comedor](DISENO-COMIDAS.md)
 
 - [Barra operativa: hora, comedor y servicio destacados](BARRA-OPERATIVA.md)
+
+- [Captura uniforme, selección al enfocar y diseño de encargos y catálogo](CAPTURA-Y-FOCO.md)

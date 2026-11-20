@@ -9,6 +9,7 @@ public class EmployeesModel(AppDb db, EmployeePhotos photos, ILogger<EmployeesMo
  [BindProperty] public Input Data{get;set;}=new();
  [BindProperty] public string? Original{get;set;}
  public Employee? Employee{get;set;}
+ public bool EmployeeNotFound{get;private set;}
  static string Version(Employee e)=>Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new{e.Number,e.Name,e.Area,e.Position,e.WorkSchedule,e.Active,e.SpecialShift}))));
  [TempData] public string? Message{get;set;}
  public sealed class Input {
@@ -24,7 +25,7 @@ public class EmployeesModel(AppDb db, EmployeePhotos photos, ILogger<EmployeesMo
   if(string.IsNullOrEmpty(Number))return;
   if(!EmployeeNumber.IsValid(Number)){Message="Solo números, máximo 5 dígitos.";return;}
   Employee=await db.Employees.AsNoTracking().SingleOrDefaultAsync(e=>e.Number==Number);
-  if(Employee==null){Data.Number=Number;Message="Empleado no encontrado. Puedes darlo de alta con Nuevo.";return;}
+  if(Employee==null){EmployeeNotFound=true;Data.Number=Number;Message="Empleado no encontrado. Puedes darlo de alta con Nuevo.";return;}
   Original=Version(Employee);
   Data=new(){Number=Employee.Number,Name=Employee.Name,Area=Employee.Area,Position=Employee.Position,WorkSchedule=Employee.WorkSchedule,SpecialShift=Employee.SpecialShift,Active=Employee.Active==true};
  }

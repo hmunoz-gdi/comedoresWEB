@@ -7,6 +7,7 @@ namespace Comedores.Web.Pages;
 [ResponseCache(NoStore=true,Location=ResponseCacheLocation.None)]
 public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersModel> logger):PageModel {
  [BindProperty(SupportsGet=true)] public string? SelectedUser{get;set;}
+ public bool CanResetPasswords=>User.IsInRole(AccessProfiles.Admin)&&string.Equals(User.Identity?.Name,"demo",StringComparison.OrdinalIgnoreCase);
  public bool ExistingSelected{get;set;}
  public bool SelectedAdministrator{get;set;}
  public bool SelectedLocked{get;set;}
@@ -33,6 +34,29 @@ public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersMo
    }
   }
   if(!string.IsNullOrWhiteSpace(SelectedUser)&&!ExistingSelected)Message="No se encontró la cuenta seleccionada.";
+ }
+ public async Task<IActionResult> OnPostResetPasswordAsync(string? accountName,string? newPassword,string? confirmPassword,string? adminPassword,string? resetReason) {
+  if(!CanResetPasswords)return Forbid();
+  IActionResult Back(string message){Message=message;return RedirectToPage(new{SelectedUser=accountName});}
+  if(string.IsNullOrWhiteSpace(accountName)||accountName.Length>100||string.IsNullOrWhiteSpace(resetReason)||resetReason.Trim().Length<5||resetReason.Length>300)
+   return Back("Selecciona una cuenta e indica el motivo del cambio (entre 5 y 300 caracteres).");
+  if(string.IsNullOrEmpty(newPassword)||newPassword.Length>256||newPassword!=confirmPassword)
+   return Back("Las contraseñas nuevas deben coincidir y tener como máximo 256 caracteres.");
+  var administrator=await users.FindByNameAsync(User.Identity!.Name!);
+  if(administrator==null||string.IsNullOrEmpty(adminPassword)||!await users.CheckPasswordAsync(administrator,adminPassword))
+   return Back("No se confirmó tu contraseña administrativa. No se realizó ningún cambio.");
+  await using var tx=await db.Database.BeginTransactionAsync();
+  var normalized=users.NormalizeName(accountName.Trim());
+  await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({normalized}))");
+  var account=await users.FindByNameAsync(accountName.Trim());
+  if(account==null)return Back("No se encontró la cuenta seleccionada.");
+  var token=await users.GeneratePasswordResetTokenAsync(account);
+  var result=await users.ResetPasswordAsync(account,token,newPassword);
+  if(!result.Succeeded)return Back("No se cambió la contraseña. Usa al menos 12 caracteres con mayúsculas, minúsculas, números y símbolos.");
+  db.AccountSecurityEvents.Add(new(){OccurredAt=DateTime.UtcNow,Account=account.UserName??"",Actor=User.Identity.Name!,Action="Cambio de contraseña",Reason=resetReason.Trim()});
+  await db.SaveChangesAsync();await tx.CommitAsync();
+  logger.LogInformation("Cambio administrativo de contraseña. AdministradorId={AdministratorId} CuentaId={AccountId}",administrator.Id,account.Id);
+  return Back("Contraseña cambiada. Las sesiones anteriores dejarán de ser válidas. El bloqueo, perfil y comedor se conservan; desbloquea la cuenta por separado si corresponde.");
  }
  public async Task<IActionResult> OnPostUnlockAsync(string accountName,string reason) {
   if(string.IsNullOrWhiteSpace(accountName)||accountName.Length>100||string.IsNullOrWhiteSpace(reason)||reason.Trim().Length<5||reason.Length>300){Message="Escribe el motivo del desbloqueo (entre 5 y 300 caracteres), después de verificar la identidad del solicitante.";return RedirectToPage();}

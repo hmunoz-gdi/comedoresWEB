@@ -58,3 +58,15 @@ La política también se aplica a cuentas existentes. La validación de intentos
 Al tercer fallo, y también al intentar entrar con una cuenta ya bloqueada, se abre **Cuenta bloqueada**. Indica comunicarse a la Mesa de Ayuda, extensión **2442**, o solicitar la habilitación a **hmunoz@aicm.com.mx** y **mfloreso@aicm.com.mx**. Se pide indicar usuario y comedor, sin compartir contraseñas. No se envían correos automáticamente ni se requiere SMTP. Entendido, Enter o Escape cierran el cuadro y devuelven el foco al usuario.
 
 El desbloqueo administrativo mantiene la contraseña actual; no genera una nueva. La contraseña existente no se puede consultar desde el sistema.
+
+## Cambiar una contraseña desde administración
+
+La cuenta **demo**, con perfil **Administrador**, puede seleccionar un usuario en **Usuarios y perfiles** y utilizar el formulario **Cambiar contraseña**. Esta autorización se comprueba también en el servidor: otro administrador no recibe esta función ni puede ejecutar su operación directamente.
+
+Introduce tu contraseña actual de demo, la nueva contraseña del usuario, su confirmación y el motivo o folio (5 a 300 caracteres, sin contraseñas). La nueva clave debe cumplir la política de Identity: al menos 12 caracteres, mayúsculas, minúsculas, números y símbolos; el formulario admite hasta 256 caracteres. No se consulta ni muestra la clave anterior.
+
+El cambio invalida las sesiones previas del usuario y agrega un movimiento **Cambio de contraseña** con responsable, cuenta y motivo, sin contraseñas ni tokens. Conserva perfiles, comedor y estado de bloqueo; utiliza **Desbloquear cuenta** por separado si está bloqueada. Si demo cambia su propia contraseña deberá volver a iniciar sesión con la nueva. Se utiliza la fecha real UTC, presentada en hora de Ciudad de México en el historial.
+
+Probar primero en la base local `comedores_pruebas`. Una modificación allí no cambia la contraseña del usuario del servidor. Para instalar esta función sobre una copia de trabajo con otros cambios locales, incorporar únicamente `src/Comedores.Web/Pages/Users.cshtml` y `Users.cshtml.cs`, revisar y compilar antes de publicar; no sustituir todo el proyecto. No requiere modificar el esquema de la base.
+
+La prueba automatizada `tests/browser/password-reset.cjs` se ejecuta únicamente contra un servidor de pruebas en `127.0.0.1:5106` conectado a `comedores_password_reset_test`. Crea usuarios ficticios y cambia la contraseña de demo de esa base aislada; nunca debe ejecutarse contra una instalación operativa.

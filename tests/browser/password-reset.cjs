@@ -1,0 +1,32 @@
+// Sólo servidor local con base aislada comedores_password_reset_test.
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process');
+(async()=>{
+ const base='http://127.0.0.1:5106',password=fs.readFileSync('.local/demo-password','utf8').trim(),suffix=crypto.randomBytes(4).toString('hex');
+ const oldPassword='Aa1!'+crypto.randomBytes(14).toString('hex'),newPassword='Bb2!'+crypto.randomBytes(14).toString('hex'),nextPassword='Cc3!'+crypto.randomBytes(14).toString('hex');const target='reset'+suffix,other='admin'+suffix;
+ const sql=input=>execFileSync('docker',['--host=unix:///var/run/docker.sock','exec','-i','comedores-postgres','psql','-U','comedores','-d','comedores_password_reset_test','-At','-v','ON_ERROR_STOP=1'],{input,encoding:'utf8'}).trim();
+ const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});let phase='inicio';
+ async function login(name,pw){const p=await browser.newPage();await p.goto(base+'/Login');await p.locator('#Username').fill(name);await p.locator('#Password').fill(pw);await Promise.all([p.waitForNavigation(),p.getByRole('button',{name:'Iniciar sesión'}).click()]);return p;}
+ const state=()=>sql(`SELECT json_build_object('hash',"PasswordHash",'stamp',"SecurityStamp",'locked',"LockoutEnd"::text,'fails',"AccessFailedCount",'roles',(SELECT string_agg(r."Name",',') FROM "AspNetUserRoles" ur JOIN "AspNetRoles" r ON r."Id"=ur."RoleId" WHERE ur."UserId"=u."Id"),'claims',(SELECT count(*) FROM "AspNetUserClaims" WHERE "UserId"=u."Id")) FROM "AspNetUsers" u WHERE "UserName"='${target}';`);
+ try{
+  const admin=await login('demo',password);await admin.waitForURL(base+'/');
+  for(const name of [target,other]){await admin.goto(base+'/Users');await admin.locator('#Username').fill(name);await admin.locator('#Password').fill(oldPassword);await admin.locator('#Profile').selectOption('Catalogo');await Promise.all([admin.waitForNavigation(),admin.locator('button[value=create]').click()]);}
+  sql(`DELETE FROM "AspNetUserRoles" WHERE "UserId"=(SELECT "Id" FROM "AspNetUsers" WHERE "UserName"='${other}'); INSERT INTO "AspNetUserRoles" ("UserId","RoleId") SELECT u."Id",r."Id" FROM "AspNetUsers" u CROSS JOIN "AspNetRoles" r WHERE u."UserName"='${other}' AND r."Name"='Administrador';`);
+  const active=await login(target,oldPassword);await active.waitForURL(base+'/');const before=JSON.parse(state());
+  await admin.goto(base+'/Users?SelectedUser='+target);assert.equal(await admin.locator('#reset-password-form').count(),1);
+  const token=await admin.locator('#reset-password-form input[name=__RequestVerificationToken]').inputValue();
+  const payload={accountName:target,newPassword,confirmPassword:newPassword,adminPassword:password,resetReason:'Identidad verificada, prueba de cambio',__RequestVerificationToken:token};
+  const post=body=>admin.request.post(base+'/Users?handler=ResetPassword',{form:body});
+  phase='rechazos sin cambios';
+  for(const body of [{...payload,confirmPassword:oldPassword},{...payload,newPassword:'short',confirmPassword:'short'},{...payload,resetReason:''},{...payload,adminPassword:oldPassword}]){await post(body);assert.deepEqual(JSON.parse(state()),before);}
+  assert.equal((await admin.request.post(base+'/Users?handler=ResetPassword',{form:{...payload,__RequestVerificationToken:''}})).status(),400);
+  phase='cambio por formulario';await admin.locator('#admin-password').fill(password);await admin.locator('#new-password').fill(newPassword);await admin.locator('#confirm-password').fill(newPassword);await admin.locator('#reset-reason').fill(payload.resetReason);await Promise.all([admin.waitForNavigation(),admin.locator('#reset-password-form button').click()]);
+  assert((await admin.locator('.notice').innerText()).includes('Contraseña cambiada'));assert(!(await admin.content()).includes(newPassword));assert.equal(await admin.locator('#new-password').inputValue(),'');
+  const after=JSON.parse(state());assert.notEqual(after.hash,before.hash);assert.notEqual(after.stamp,before.stamp);assert.equal(after.roles,before.roles);assert.equal(after.claims,before.claims);assert.equal(sql(`SELECT count(*) FROM "AccountSecurityEvents" WHERE "Account"='${target}' AND "Action"='Cambio de contraseña' AND "Actor"='demo';`),'1');
+  assert((await active.request.get(base+'/Employees')).url().includes('/Login'));const wrong=await login(target,oldPassword);assert(wrong.url().includes('/Login'));const good=await login(target,newPassword);await good.waitForURL(base+'/');
+  phase='sólo demo administrador';const otherAdmin=await login(other,oldPassword);await otherAdmin.goto(base+'/Users?SelectedUser='+target);assert.equal(await otherAdmin.locator('#reset-password-form').count(),0);const otherToken=await otherAdmin.locator('input[name=__RequestVerificationToken]').first().inputValue();assert.equal((await otherAdmin.request.post(base+'/Users?handler=ResetPassword',{form:{...payload,adminPassword:oldPassword,__RequestVerificationToken:otherToken}})).status(),403);
+  await good.goto(base+'/Employees');const catToken=await good.locator('input[name=__RequestVerificationToken]').first().inputValue();assert.equal((await good.request.post(base+'/Users?handler=ResetPassword',{form:{...payload,__RequestVerificationToken:catToken}})).status(),403);
+  phase='bloqueo conservado';sql(`UPDATE "AspNetUsers" SET "LockoutEnd"='infinity',"AccessFailedCount"=3 WHERE "UserName"='${target}';`);await post({...payload,newPassword:nextPassword,confirmPassword:nextPassword});const locked=JSON.parse(state());assert.equal(locked.locked,'infinity');assert.equal(locked.fails,3);assert.equal(locked.roles,before.roles);const blocked=await login(target,nextPassword);assert((await blocked.locator('#lockout-dialog').count())>0||(await blocked.locator('.notice').innerText()).includes('bloqueada'));
+  phase='cambio propio';await post({...payload,accountName:'demo'});const self=await login('demo',newPassword);await self.waitForURL(base+'/');
+  console.log('PASS: cambio desde formulario, validaciones, reautenticación, autorización exclusiva demo administrador, CSRF, hash y sello renovados, sesiones revocadas, clave anterior rechazada, bitácora sin contraseña, bloqueo/perfiles conservados y cambio propio.');
+ }catch(e){console.error(phase,e);throw e;}finally{await browser.close();}
+})().catch(()=>process.exitCode=1);

@@ -38,3 +38,5 @@ Actualización de horarios: [Hora real, segmentos y confirmación de repetición
 - [Recoger comida para compañeros: responsable y registro por grupo](RECOGIDAS-POR-ENCARGO.md)
 
 - [Diseño gastronómico: platos servidos y ambiente de comedor](DISENO-COMIDAS.md)
+
+- [Barra operativa: hora, comedor y servicio destacados](BARRA-OPERATIVA.md)

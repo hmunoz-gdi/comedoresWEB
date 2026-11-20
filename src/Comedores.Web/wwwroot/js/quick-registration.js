@@ -70,7 +70,7 @@
             const data = await json(await fetch(url, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(15000) }));
             if (!data.ok) { if (data.notFound) { await warnNotFound(); number.select(); } else notify(data.message); return; }
             loadedNumber = data.number;
-            el('current-service').textContent = data.currentService;
+            if (el('server-banner').dataset.manual !== 'true') el('current-service').textContent = data.currentService;
             el('registration-number').value = data.number;
             el('RequestId').value = data.requestId;
             for (const [id, text] of Object.entries({

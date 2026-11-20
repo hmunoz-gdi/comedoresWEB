@@ -4,6 +4,9 @@
     const clock = document.getElementById('server-clock');
     const date = document.getElementById('server-date');
     const service = document.getElementById('current-service');
+    const room = document.getElementById('current-room');
+    const roomSelect = document.getElementById('CoordinatorRoomId');
+    const serviceSelect = document.getElementById('SelectedServiceType');
     const status = document.getElementById('clock-status');
     const motion = document.getElementById('clock-motion');
     const zone = 'America/Mexico_City';
@@ -12,7 +15,15 @@
     let serverEpoch = Number(banner.dataset.epoch), syncedAt = performance.now();
     let simulated = banner.dataset.simulated === 'true', periods = null, roomConfigured = true, pending = false;
     const update = (element, value) => { if (element.textContent !== value) element.textContent = value; };
+    function renderSelection() {
+        if (banner.dataset.manual !== 'true') return;
+        if (room && roomSelect) update(room, roomSelect.value ? roomSelect.selectedOptions[0].textContent.trim() : 'Selecciona comedor');
+        if (serviceSelect) update(service, ({ DYN: 'Desayuno', COM: 'Comida', CEN: 'Cena' })[serviceSelect.value] || 'Selecciona servicio');
+    }
+    roomSelect?.addEventListener('change', renderSelection);
+    serviceSelect?.addEventListener('change', renderSelection);
     function render() {
+        renderSelection();
         // Avanza desde la última hora recibida; no depende del reloj configurado en el navegador.
         const utc = new Date(serverEpoch + (simulated ? 0 : performance.now() - syncedAt));
         update(clock, timeFormat.format(utc));

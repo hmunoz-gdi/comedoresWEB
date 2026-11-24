@@ -99,7 +99,10 @@ public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersMo
   var claimsRemoved=await users.RemoveClaimsAsync(account!,claims.Where(c=>c.Type==AccessProfiles.RoomClaim));
   var claimAdded=Profile==AccessProfiles.Operator?await users.AddClaimAsync(account!,new System.Security.Claims.Claim(AccessProfiles.RoomClaim,RoomId!.Value.ToString())):IdentityResult.Success;
   var stamp=await users.UpdateSecurityStampAsync(account!);
-  if(added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded)await tx.CommitAsync();
+  if(added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded){
+   db.AccountSecurityEvents.Add(new(){OccurredAt=DateTime.UtcNow,Actor=User.Identity?.Name??"",Account=account!.UserName??"",Action=operation=="create"?"Alta de usuario":"Cambio de perfil y comedor",Reason=$"Perfiles anteriores: {string.Join(", ",previous)} · Perfil actual: {Profile} · Comedor anterior: {claims.FirstOrDefault(c=>c.Type==AccessProfiles.RoomClaim)?.Value??"sin asignación"} · Comedor actual: {RoomId?.ToString()??"sin asignación"}"});
+   await db.SaveChangesAsync();await tx.CommitAsync();
+  }
   Message=added.Succeeded&&stamp.Succeeded&&claimsRemoved.Succeeded&&claimAdded.Succeeded?"Perfil guardado. El usuario debe iniciar sesión nuevamente.":"No se pudo completar la asignación. Revisa el perfil de esta cuenta antes de utilizarla.";
   if(operation=="profile")return RedirectToPage(new{SelectedUser=Username.Trim()});
   return RedirectToPage();

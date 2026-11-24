@@ -66,7 +66,7 @@ public class EmployeesModel(AppDb db, EmployeePhotos photos, ILogger<EmployeesMo
   if(photo==null||photo.Length is <=0 or >5*1024*1024)return new JsonResult(new{ok=false,message="Selecciona o captura una fotografía JPEG de máximo 5 MB."}){StatusCode=400};
   using var ms=new MemoryStream();await photo.CopyToAsync(ms);var bytes=ms.ToArray();
   if(EmployeePhotos.ContentType(bytes)!="image/jpeg"||bytes.Length<4||bytes[^2]!=0xff||bytes[^1]!=0xd9)return new JsonResult(new{ok=false,message="La fotografía debe ser un archivo JPEG válido."}){StatusCode=400};
-  try{await photos.SaveAsync(employeeNumber,bytes);return new JsonResult(new{ok=true,message="Fotografía guardada. Ya está disponible en Registrar servicio."});}
+  try{await photos.SaveAsync(employeeNumber,bytes);db.AuditLogs.Add(AuditLog.Request(HttpContext,"Fotografía actualizada","Empleado "+employeeNumber));await db.SaveChangesAsync();return new JsonResult(new{ok=true,message="Fotografía guardada. Ya está disponible en Registrar servicio."});}
   catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){logger.LogWarning(ex,"No fue posible guardar fotografía");return new JsonResult(new{ok=false,message="No se pudo guardar la foto. Revisa la conexión y los permisos de escritura en la carpeta del servidor. Los datos del empleado permanecen guardados; puedes reintentar la foto."}){StatusCode=503};}
  }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 var connection = builder.Configuration.GetConnectionString("Comedores")
     ?? throw new InvalidOperationException("Configure ConnectionStrings__Comedores.");
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDb>(o=>o.UseNpgsql(connection));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(o=> {
  o.Password.RequiredLength=12; o.Lockout.MaxFailedAccessAttempts=3; o.Lockout.AllowedForNewUsers=true;
@@ -13,10 +14,11 @@ builder.Services.AddAuthorization(o=> {
  o.AddPolicy("Services",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator));
  o.AddPolicy("Reports",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator,AccessProfiles.Admin));
  o.AddPolicy("Catalog",p=>p.RequireRole(AccessProfiles.Catalog));
+ o.AddPolicy("Audit",p=>p.RequireRole(AccessProfiles.Admin));
  o.AddPolicy("Users",p=>p.RequireRole(AccessProfiles.Admin));
 });
 builder.Services.ConfigureApplicationCookie(o=>o.AccessDeniedPath="/Denied");
-builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Reports"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
+builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Reports"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AuthorizePage("/Audit","Audit"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
 builder.Services.Configure<SecurityStampValidatorOptions>(o=>o.ValidationInterval=TimeSpan.Zero);
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<PickupService>();
@@ -33,7 +35,7 @@ if (app.Environment.IsDevelopment()) {
   foreach(var id in new[]{1,2,3}) {
    db.MealWindows.AddRange(new MealWindow {DiningRoomId=id,Type="DYN",Start=new(8,0),End=new(11,0)},new MealWindow {DiningRoomId=id,Type="COM",Start=new(14,0),End=new(18,0)},new MealWindow {DiningRoomId=id,Type="CEN",Start=id==3?new(19,0):new(20,30),End=new(22,0)});
   }
-  db.Terminals.AddRange(new Terminal{Ip="172.16.66.230",DiningRoomId=1},new Terminal{Ip="172.16.60.54",DiningRoomId=2},new Terminal{Ip="172.16.70.68",DiningRoomId=3},new Terminal{Ip="172.18.208.1",DiningRoomId=3},new Terminal{Ip="172.18.219.13",DiningRoomId=3});
+  db.Terminals.AddRange(new Terminal{Ip="172.16.66.230",DiningRoomId=1},new Terminal{Ip="172.16.60.54",DiningRoomId=2},new Terminal{Ip="172.16.70.68",DiningRoomId=3});
   db.Employees.AddRange(new Employee{Number="40001",Name="Empleado de demostración",Area="Área de prueba",Position="Operativo",WorkSchedule="Pendiente de RH",Active=true},new Employee{Number="49001",Name="Empleado de turno especial (demo)",Area="Área de prueba",Position="Mando",WorkSchedule="Pendiente de RH",Active=true,SpecialShift=true});
   await db.SaveChangesAsync();
  }
@@ -72,6 +74,7 @@ using(var scope=app.Services.CreateScope()) {
  CREATE INDEX IF NOT EXISTS "IX_Consumptions_PickupBatchId" ON "Consumptions"("PickupBatchId");
  """);
  await ConsumptionManagementService.EnsureSchemaAsync(securityDb);
+ await AuditLog.EnsureSchemaAsync(securityDb);
  var roles=scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
  var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
  foreach(var role in AccessProfiles.All)if(!await roles.RoleExistsAsync(role)) {
@@ -93,6 +96,8 @@ app.Use(async(context,next)=>{
   var meals=context.RequestServices.GetRequiredService<MealService>();
   var denied=await meals.OperatorAccessErrorAsync(context.User,meals.ResolveIp(context.Connection.RemoteIpAddress));
   if(denied!=null){
+   var auditDb=context.RequestServices.GetRequiredService<AppDb>();
+   auditDb.AuditLogs.Add(AuditLog.Request(context,"Acceso rechazado por terminal","Equipo",denied));await auditDb.SaveChangesAsync();
    await context.RequestServices.GetRequiredService<SignInManager<IdentityUser>>().SignOutAsync();
    var temp=context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataDictionaryFactory>().GetTempData(context);
    temp["TerminalAccessError"]=denied;temp.Save();
@@ -100,6 +105,22 @@ app.Use(async(context,next)=>{
   }
  }
  await next();
+});
+app.Use(async(context,next)=>{
+ var actor=context.User.Identity?.Name;
+ await next();
+ // Sólo consultas de módulos y exportaciones, sin cuerpos, contraseñas ni parámetros completos.
+ var handler=context.Request.Query["handler"].ToString().ToLowerInvariant();var path=context.Request.Path.Value??"";
+ var denied=context.Response.StatusCode==403||(context.Response.StatusCode==302&&context.Response.Headers.Location.ToString().Contains("/Denied",StringComparison.OrdinalIgnoreCase));
+ if(actor!=null&&(context.Response.StatusCode==200||denied)&&context.Request.Method=="GET"&&
+    (new[]{"/Reports","/Audit","/Users","/Employees","/Pickup","/Register"}.Contains(path,StringComparer.OrdinalIgnoreCase))&&
+    (handler==""||handler=="csv"||handler=="lookup")){
+  var db=context.RequestServices.GetRequiredService<AppDb>();
+  var target=path;
+  var number=context.Request.Query["number"].ToString();if(EmployeeNumber.IsValid(number))target+=" · Empleado "+number;
+  db.AuditLogs.Add(AuditLog.Request(context,denied?"Acceso no autorizado":handler=="csv"?"Exportación de reporte":handler=="lookup"?"Consulta de empleado":"Consulta de módulo",target));
+  await db.SaveChangesAsync();
+ }
 });
 app.UseAuthorization(); app.MapRazorPages();
 app.Run();

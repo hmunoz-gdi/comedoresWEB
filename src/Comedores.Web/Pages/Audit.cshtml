@@ -1,0 +1,15 @@
+@page
+@model AuditModel
+@{ViewData["Title"]="Auditoría del sistema";}
+<p class="eyebrow">ADMINISTRACIÓN · TRAZABILIDAD</p><h1>Auditoría del sistema</h1>
+<p>Consulta los movimientos por usuario. Las fechas se muestran en hora de Ciudad de México; la auditoría nueva utiliza la hora real del servidor.</p>
+<form method="get" class="filters"><div><label asp-for="From">Fecha inicial</label><input asp-for="From" type="date"/></div><div><label asp-for="To">Fecha final</label><input asp-for="To" type="date"/></div><div><label asp-for="Actor">Usuario exacto</label><input asp-for="Actor" maxlength="100" placeholder="Ej. demo"/></div><div><label asp-for="ActionFilter">Movimiento</label><select asp-for="ActionFilter"><option value="">Todos</option>@foreach(var action in Model.Actions){<option>@action</option>}</select></div><div><label asp-for="Target">Registro o empleado</label><input asp-for="Target" maxlength="150" placeholder="Ej. Empleado 41560"/></div><button>Consultar</button></form>
+<div asp-validation-summary="All" class="notice"></div>
+<p><strong>@Model.Total movimientos</strong> · Página @Model.PageNumber de @Model.Pages</p>
+<p class="export-help">Histórico: registros previos recuperados de consumos y seguridad. No reconstruye modificaciones antiguas que nunca se registraron. Las contraseñas, tokens y fotografías no se incluyen.</p>
+@if(ModelState.IsValid){<a class="button-link secondary" asp-page-handler="Csv" asp-route-From="@Model.From.ToString("yyyy-MM-dd")" asp-route-To="@Model.To.ToString("yyyy-MM-dd")" asp-route-Actor="@Model.Actor" asp-route-ActionFilter="@Model.ActionFilter" asp-route-Target="@Model.Target" id="export-audit">Exportar auditoría CSV / Excel</a>}
+<div class="table-wrap audit-log"><table><thead><tr><th>Fecha y hora CDMX</th><th>Usuario</th><th>IP</th><th>Movimiento</th><th>Registro</th><th>Detalle</th><th>Origen</th></tr></thead><tbody>
+@foreach(var row in Model.Rows){<tr><td class="audit-time">@MealService.Local(row.OccurredAt).ToString("dd/MM/yyyy HH:mm:ss")</td><td>@row.Actor</td><td>@(string.IsNullOrEmpty(row.Ip)?"No registrada":row.Ip)</td><td>@row.Action</td><td>@row.Target</td><td>@row.Detail</td><td>@row.Origin</td></tr>}
+</tbody></table></div>
+@if(Model.Rows.Count==0&&ModelState.IsValid){<p class="notice">No se encontraron movimientos con estos filtros.</p>}
+<nav class="audit-pagination" aria-label="Páginas de auditoría">@if(Model.PageNumber>1){<a asp-route-From="@Model.From.ToString("yyyy-MM-dd")" asp-route-To="@Model.To.ToString("yyyy-MM-dd")" asp-route-Actor="@Model.Actor" asp-route-ActionFilter="@Model.ActionFilter" asp-route-Target="@Model.Target" asp-route-PageNumber="@(Model.PageNumber-1)">← Anterior</a>}@if(Model.PageNumber<Model.Pages){<a asp-route-From="@Model.From.ToString("yyyy-MM-dd")" asp-route-To="@Model.To.ToString("yyyy-MM-dd")" asp-route-Actor="@Model.Actor" asp-route-ActionFilter="@Model.ActionFilter" asp-route-Target="@Model.Target" asp-route-PageNumber="@(Model.PageNumber+1)">Siguiente →</a>}</nav>

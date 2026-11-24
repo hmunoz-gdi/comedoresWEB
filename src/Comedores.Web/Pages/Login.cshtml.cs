@@ -30,6 +30,7 @@ public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityU
    var principal=await signIn.CreateUserPrincipalAsync(account);
    var denied=await meals.OperatorAccessErrorAsync(principal,meals.ResolveIp(HttpContext.Connection.RemoteIpAddress));
    if(denied!=null){
+    db.AuditLogs.Add(new(){Actor=account.UserName??"",Ip=HttpContext.Connection.RemoteIpAddress?.ToString()??"",Action="Acceso rechazado por terminal",Target="Inicio de sesión"});await db.SaveChangesAsync();
     await tx.CommitAsync();await signIn.SignOutAsync();
     ModelState.Remove(nameof(Password));Password="";Error=denied;TerminalRejected=true;return Page();
    }
@@ -47,11 +48,12 @@ public class LoginModel(SignInManager<IdentityUser> signIn,UserManager<IdentityU
    }
    logger.LogWarning("Cuenta bloqueada por intentos de acceso. CuentaId={AccountId}",account.Id);
   }
-  await tx.CommitAsync();
+  db.AuditLogs.Add(new(){Actor=(account?.UserName??Username.Trim())[..Math.Min((account?.UserName??Username.Trim()).Length,100)],Ip=HttpContext.Connection.RemoteIpAddress?.ToString()??"",Action=result.Succeeded?"Inicio de sesión":result.IsLockedOut?"Acceso bloqueado":"Intento de acceso fallido",Target="Inicio de sesión"});
+  await db.SaveChangesAsync();await tx.CommitAsync();
   if(result.Succeeded) return RedirectToPage("/Index");
   ModelState.Remove(nameof(Password));Password="";
   AccountLocked=result.IsLockedOut;
   Error=result.IsLockedOut?"Cuenta bloqueada. Comunícate con la Mesa de Ayuda del AICM, extensión 2442, para solicitar el desbloqueo.":"No fue posible iniciar sesión. Revisa usuario y contraseña. Si necesitas ayuda, comunícate con la Mesa de Ayuda del AICM, extensión 2442.";return Page();
  }
- public async Task<IActionResult> OnPostLogoutAsync(){await signIn.SignOutAsync();return RedirectToPage("/Login");}
+ public async Task<IActionResult> OnPostLogoutAsync(){if(User.Identity?.IsAuthenticated==true){db.AuditLogs.Add(AuditLog.Request(HttpContext,"Cierre de sesión","Sesión"));await db.SaveChangesAsync();}await signIn.SignOutAsync();return RedirectToPage("/Login");}
 }

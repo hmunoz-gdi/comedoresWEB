@@ -2,7 +2,7 @@
 
 Preparado el viernes 20 de noviembre de 2026. Aplicación prevista: **lunes 23 de noviembre de 2026**, en una ventana acordada sin capturas. **Esta guía no ejecuta acciones ni confirma el estado actual del servidor.** Sus rutas corresponden a la instalación que se verificó anteriormente; se volverán a comprobar el lunes.
 
-Versión funcional objetivo: **66b98f5**, rama `desarrollo/primera-version-web`, incluyendo los cambios anteriores de grupos, bajas, reportes, contador y diseño. El commit de esta guía sólo agrega documentación.
+Actualización del 24/11/2026: la versión a publicar debe incluir también **Auditoría**, el crédito trasladado a la barra lateral y el ajuste preparado de CREI. Usar la versión actual integrada de `desarrollo/primera-version-web`; no reutilizar un paquete anterior limitado a `66b98f5`. Consultar `docs/AUDITORIA-Y-CREI.md`.
 
 ## Qué se publicará
 
@@ -22,7 +22,7 @@ Antes de generar el paquete:
 4. Crear la publicación en una **copia temporal separada**, para no modificar `packages.lock.json`, `obj` ni el arranque de Windows. Una publicación Linux puede cambiar los identificadores de ejecución del archivo de bloqueo y provocar NU1004 al volver a iniciar localmente.
 5. Publicar con `dotnet publish` en Release para `linux-x64`, dependiente del runtime, sin apphost. El servidor ya tenía .NET 10 instalado; se comprobará de nuevo.
 6. Excluir del paquete `.local`, respaldos, fotos privadas, dumps y todos los `appsettings*.json` privados. El archivo de producción del servidor será conservado. No copiar contraseñas a argumentos ni logs.
-7. Entregar un TAR, SHA256 y manifiesto de la fuente utilizada. No transferir ni instalar hoy.
+7. Entregar un TAR, SHA256 y manifiesto de la fuente utilizada. No transferir ni instalar sin el paso acordado con el usuario.
 
 Comando de publicación, **desde la copia temporal ya preparada**:
 
@@ -213,7 +213,7 @@ sudo systemctl is-active comedores
 
 No modificar ni reemplazar `/etc/comedores`, `/var/lib/comedores`, las fotos, la base, la configuración de terminales ni Nginx en este paso. No ejecutar el script de arranque de Windows en Ubuntu.
 
-El arranque aplica actualizaciones aditivas: conserva datos y agrega los campos de recogida y de eliminación lógica y sus índices cuando faltan. Una eliminación posterior guarda responsable, fecha y motivo; no borra físicamente el registro.
+El arranque aplica actualizaciones aditivas: conserva datos, agrega los campos de recogida y eliminación lógica y sus índices cuando faltan, y crea `AuditLogs` con sus índices e incorpora los consumos y eventos de seguridad anteriores sin duplicarlos. Una eliminación posterior guarda responsable, fecha y motivo; no borra físicamente el registro.
 
 ## 6. Validar antes de abrir la operación
 
@@ -225,8 +225,9 @@ El arranque aplica actualizaciones aditivas: conserva datos y agrega los campos 
 6. Consultar fotografías conocidas, tanto nombres `.jpg` como `.JPG`.
 7. Revisar reloj, servicio vigente, contador y crédito del área en la barra. El contador se compara contra servicios vigentes del mismo comedor/fecha/tipo, incluyendo encargos.
 8. En Reportes: fechas, comedor, búsqueda, grupos completos y folios, CSV. Operador no tiene Eliminar; coordinador y administrador sí. No eliminar registros reales sólo para demostrar el botón.
-9. Verificar que los totales de empleados, usuarios y servicios físicos coinciden con el respaldo previo, antes de reabrir capturas. Las actualizaciones aditivas no deben insertar consumos.
-10. Cámara: el acceso HTTP por IP conserva su limitación de navegador. El túnel SSH a localhost puede usarse para la cámara administrativa como antes; DNS/TLS se retoma después.
+9. Comprobar acceso al módulo Auditoría sólo como administrador, filtros y CSV. La configuración de CREI se aplica aparte con el SQL revisado y respaldo previo; no deshabilita los demás comedores.
+10. Verificar que los totales de empleados, usuarios y servicios físicos coinciden con el respaldo previo, antes de reabrir capturas. Las actualizaciones aditivas no deben insertar consumos.
+11. Cámara: el acceso HTTP por IP conserva su limitación de navegador. El túnel SSH a localhost puede usarse para la cámara administrativa como antes; DNS/TLS se retoma después.
 
 ## 7. Volver al código anterior si falla
 
@@ -250,7 +251,8 @@ Si ya se utilizó la eliminación lógica en la versión nueva, no reabrir una v
 Prepara la publicación de SICOM para el lunes 23/11/2026 en 172.16.2.12.
 Consulta docs/PUBLICACION-172.16.2.12.md de la rama desarrollo/primera-version-web
  de https://github.com/hmunoz-gdi/comedoresWEB.
-Verifica que mi copia incluya los cambios hasta 66b98f5. Respalda el código.
+Verifica que mi copia incluya también los cambios de Auditoría y CREI del 24/11/2026.
+Consulta docs/AUDITORIA-Y-CREI.md y respalda el código.
 Genera una copia temporal de la fuente para publicar Linux x64, sin modificar
 mi arranque Windows, .local, conexiones, fotos, base comedores_pruebas ni lockfile original.
 Verifica y agrega si falta, sólo en esa copia de publicación, ForwardedHeaders

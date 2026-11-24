@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 namespace Comedores.Web;
 public class Employee {
  public int Id { get; set; }
@@ -61,7 +62,8 @@ public class AccountSecurityEvent {
  public string Action{get;set;}="";
  public string Reason{get;set;}="";
 }
-public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<IdentityUser>(options) {
+public class AppDb(DbContextOptions<AppDb> options, IHttpContextAccessor? contextAccessor=null) : IdentityDbContext<IdentityUser>(options) {
+ public DbSet<AuditLog> AuditLogs=>Set<AuditLog>();
  public DbSet<PickupBatch> PickupBatches=>Set<PickupBatch>();
  public DbSet<AccountSecurityEvent> AccountSecurityEvents=>Set<AccountSecurityEvent>();
  public DbSet<Employee> Employees => Set<Employee>();
@@ -69,8 +71,38 @@ public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<Identity
  public DbSet<Terminal> Terminals => Set<Terminal>();
  public DbSet<MealWindow> MealWindows => Set<MealWindow>();
  public DbSet<Consumption> Consumptions => Set<Consumption>();
+ public override Task<int> SaveChangesAsync(CancellationToken cancellationToken=default)=>SaveChangesAsync(true,cancellationToken);
+ public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,CancellationToken cancellationToken=default){
+  ChangeTracker.DetectChanges();
+  var context=contextAccessor?.HttpContext;
+  var entries=context?.User.Identity?.IsAuthenticated==true?ChangeTracker.Entries().Where(e=>e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).Where(e=>e.Entity is Employee or Consumption or PickupBatch or AccountSecurityEvent).Select(e=>(Entry:e,State:e.State,Fields:string.Join("; ",e.Properties.Where(p=>p.IsModified).Select(p=>e.Entity is Employee?$"{p.Metadata.Name}: {p.OriginalValue??"vacío"} → {p.CurrentValue??"vacío"}":p.Metadata.Name)))).ToList():[];
+  if(entries.Count==0)return await base.SaveChangesAsync(acceptAllChangesOnSuccess,cancellationToken);
+  // La operación y su auditoría se confirman juntas, también cuando el servicio ya abrió una transacción.
+  await using var ownTransaction=Database.CurrentTransaction==null?await Database.BeginTransactionAsync(cancellationToken):null;
+  var result=await base.SaveChangesAsync(acceptAllChangesOnSuccess,cancellationToken);
+  await using var auditDb=new AppDb(new DbContextOptionsBuilder<AppDb>().UseNpgsql(Database.GetDbConnection()).Options);
+  await auditDb.Database.UseTransactionAsync(Database.CurrentTransaction!.GetDbTransaction(),cancellationToken);
+  var employeeIds=entries.Select(x=>x.Entry.Entity).OfType<Consumption>().Select(c=>c.EmployeeId).Distinct().ToList();
+  var employeeNumbers=employeeIds.Count==0?new Dictionary<int,string>():await auditDb.Employees.Where(e=>employeeIds.Contains(e.Id)).ToDictionaryAsync(e=>e.Id,e=>e.Number,cancellationToken);
+  var roomIds=entries.Select(x=>x.Entry.Entity).OfType<Consumption>().Select(c=>c.DiningRoomId).Concat(entries.Select(x=>x.Entry.Entity).OfType<PickupBatch>().Select(g=>g.DiningRoomId)).Distinct().ToList();
+  var roomNames=roomIds.Count==0?new Dictionary<int,string>():await auditDb.DiningRooms.Where(r=>roomIds.Contains(r.Id)).ToDictionaryAsync(r=>r.Id,r=>r.Name,cancellationToken);
+  foreach(var item in entries){
+   var log=AuditLog.Request(context!,"","",item.Fields);
+   switch(item.Entry.Entity){
+    case Employee e:log.Action=item.State==EntityState.Added?"Alta de empleado":e.Active!=true?"Baja de empleado":"Modificación de empleado";log.Target="Empleado "+e.Number;if(item.State==EntityState.Added)log.Detail=$"Nombre: {e.Name} · Área: {e.Area} · Puesto: {e.Position} · Horario: {e.WorkSchedule} · Activo: {e.Active} · Turno especial: {e.SpecialShift}";break;
+    case Consumption c:log.Action=item.State==EntityState.Added?"Registro de servicio":"Consumo cancelado";log.Target="Consumo #"+item.Entry.Property("Id").CurrentValue;log.Target+=" · Empleado "+employeeNumbers.GetValueOrDefault(c.EmployeeId,c.EmployeeId.ToString());log.Detail=$"Empleado {employeeNumbers.GetValueOrDefault(c.EmployeeId,c.EmployeeId.ToString())} · {roomNames.GetValueOrDefault(c.DiningRoomId,c.DiningRoomId.ToString())} · {MealTypes.Name(c.Type)}";log.SourceKey=$"consumption:{item.Entry.Property("Id").CurrentValue}:"+(item.State==EntityState.Added?"registro":"cancelacion");break;
+    case PickupBatch g:log.Action="Recogida de grupo";log.Target=g.Id.ToString();log.Detail=$"Responsable {g.CollectorNumber} · {g.Count} servicios · {roomNames.GetValueOrDefault(g.DiningRoomId,g.DiningRoomId.ToString())} · {MealTypes.Name(g.Type)}";break;
+    case AccountSecurityEvent e:log.Action=e.Action;log.Target=e.Account;log.Detail=e.Reason;log.SourceKey="security:"+item.Entry.Property("Id").CurrentValue;break;
+   }
+   auditDb.AuditLogs.Add(log);
+  }
+  await auditDb.SaveChangesAsync(cancellationToken);if(ownTransaction!=null)await ownTransaction.CommitAsync(cancellationToken);return result;
+ }
  protected override void OnModelCreating(ModelBuilder b) {
   base.OnModelCreating(b);
+  b.Entity<AuditLog>().HasIndex(x=>x.SourceKey).IsUnique();
+  b.Entity<AuditLog>().HasIndex(x=>new{x.OccurredAt,x.Id});
+  b.Entity<AuditLog>().HasIndex(x=>new{x.Actor,x.OccurredAt});
   b.Entity<Employee>().HasIndex(x=>x.Number).IsUnique();
   b.Entity<Employee>().Ignore(x=>x.Category);
   b.Entity<Terminal>().HasIndex(x=>x.Ip).IsUnique();

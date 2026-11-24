@@ -321,6 +321,29 @@ try {
   Check((await pickup.RegisterAsync(op,"10.0.0.1",group)).Ok&&!await db.Consumptions.AnyAsync(x=>x.PickupBatchId==group.RequestId),"Reintento de grupo eliminado conserva folio sin recrear consumos");
   Check(await db.Consumptions.IgnoreQueryFilters().CountAsync()==3&&await db.Consumptions.CountAsync()==1,"Historial conserva eliminados y consultas normales los excluyen");
  }finally{await db.Database.EnsureDeletedAsync();}
+ var auditOptions=new DbContextOptionsBuilder<AppDb>().UseNpgsql(cs+"_audit").Options;
+ await using(var seed=new AppDb(auditOptions))try{
+  await seed.Database.EnsureCreatedAsync();seed.DiningRooms.Add(new DiningRoom{Id=1,Name="CREI"});seed.Employees.Add(new Employee{Id=1,Number="40001",Name="Histórico",Active=true});
+  seed.Consumptions.Add(new Consumption{RequestId=Guid.NewGuid(),EmployeeId=1,DiningRoomId=1,OccurredAt=DateTime.UtcNow,ServiceDate=DateOnly.FromDateTime(DateTime.UtcNow),Type="COM",Operator="operador-anterior",Ip="172.16.70.68",DailySequence=1});
+  seed.AccountSecurityEvents.Add(new(){OccurredAt=DateTime.UtcNow,Actor="admin-anterior",Account="operador-anterior",Action="Desbloqueo",Reason="Histórico conocido"});await seed.SaveChangesAsync();
+  await AuditLog.EnsureSchemaAsync(seed);await AuditLog.EnsureSchemaAsync(seed);
+  Check(await seed.AuditLogs.CountAsync()==2&&await seed.AuditLogs.AllAsync(x=>x.Origin=="Histórico"),"Auditoría histórica se recupera sin duplicar ni inventar movimientos");
+  var context=new Microsoft.AspNetCore.Http.DefaultHttpContext{User=new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name,"auditor-prueba")},"test"))};context.Connection.RemoteIpAddress=System.Net.IPAddress.Parse("172.16.70.68");
+  await using var db=new AppDb(auditOptions,new Microsoft.AspNetCore.Http.HttpContextAccessor{HttpContext=context});
+  var employee=await db.Employees.SingleAsync();employee.Name="Nombre actualizado";await db.SaveChangesAsync();
+  Check(await db.AuditLogs.AnyAsync(x=>x.Actor=="auditor-prueba"&&x.Ip=="172.16.70.68"&&x.Action=="Modificación de empleado"&&x.Detail.Contains("Histórico")&&x.Detail.Contains("Nombre actualizado")),"Auditoría de modificación guarda autor, IP y antes/después");
+  var before=await db.AuditLogs.CountAsync();
+  await using(var tx=await db.Database.BeginTransactionAsync()){employee.Active=false;await db.SaveChangesAsync();await tx.RollbackAsync();}
+  db.ChangeTracker.Clear();Check(await db.AuditLogs.CountAsync()==before&&(await db.Employees.SingleAsync()).Active==true,"Rollback revierte datos y auditoría de la misma operación");
+  db.Employees.Add(new Employee{Number="40001",Name="Duplicado",Active=true});try{await db.SaveChangesAsync();Check(false,"Debe rechazarse duplicado");}catch(DbUpdateException){}db.ChangeTracker.Clear();
+  Check(await db.AuditLogs.CountAsync()==before,"Una escritura fallida no deja auditoría de un cambio inexistente");
+  db.Employees.Add(new Employee{Number="40002",Name="Sin aceptar cambios",Active=true});await db.SaveChangesAsync(false);Check(db.ChangeTracker.Entries<Employee>().Any(e=>e.State==EntityState.Added)&&await db.AuditLogs.AnyAsync(x=>x.Target=="Empleado 40002"),"SaveChanges sin aceptar mantiene estados y escribe auditoría sin duplicar entidades");db.ChangeTracker.AcceptAllChanges();
+  db.AuditLogs.Add(new(){OccurredAt=DateTime.UtcNow,Actor="=FORMULA",Action="Prueba CSV",Target="Prueba",Detail="No es una fórmula ejecutable"});await db.SaveChangesAsync();
+  var today=DateOnly.FromDateTime(MealService.Local(DateTime.UtcNow));var report=new Comedores.Web.Pages.AuditModel(db){From=today,To=today,Actor="=FORMULA"};var csv=(Microsoft.AspNetCore.Mvc.FileContentResult)await report.OnGetCsvAsync();
+  Check(System.Text.Encoding.UTF8.GetString(csv.FileContents).Contains("'="),"CSV de auditoría neutraliza fórmulas");
+  db.AuditLogs.AddRange(Enumerable.Range(0,105).Select(i=>new AuditLog{Actor="paginacion",Target=i.ToString(),Action="Prueba",OccurredAt=DateTime.UtcNow}));await db.SaveChangesAsync();
+  var paged=new Comedores.Web.Pages.AuditModel(db){From=today,To=today,Actor="paginacion",PageNumber=2};await paged.OnGetAsync();Check(paged.Total==105&&paged.Pages==2&&paged.Rows.Count==5,"Reporte de auditoría pagina y filtra sin truncar el total");
+ }finally{await seed.Database.EnsureDeletedAsync();}
  Console.WriteLine($"{checks} comprobaciones completadas.");
 } finally { await using var db=Db(); await db.Database.EnsureDeletedAsync(); NpgsqlConnection.ClearAllPools(); }
 class DevEnvironment:IWebHostEnvironment {

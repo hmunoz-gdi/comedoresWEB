@@ -112,3 +112,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Aviso diferenciado de empleado dado de baja](docs/AVISO-EMPLEADO-BAJA.md).
 
 - [Preparación de publicación en 172.16.2.12 — lunes 23/11/2026](docs/PUBLICACION-172.16.2.12.md).
+
+- [Auditoría administrativa, crédito lateral y ajuste de CREI](docs/AUDITORIA-Y-CREI.md).

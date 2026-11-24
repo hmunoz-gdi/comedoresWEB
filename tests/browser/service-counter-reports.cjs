@@ -5,13 +5,13 @@ function sql(query){return execFileSync('docker',['--host=unix:///var/run/docker
 (async()=>{
  sql('DELETE FROM "Consumptions";DELETE FROM "PickupBatches";DELETE FROM "AccountSecurityEvents";');
  for(const [username,role]of [['report_op','Operador'],['report_coord','Coordinador'],['report_admin','Administrador'],['report_catalog','Catalogo']]){
-  sql(`DELETE FROM "AspNetUsers" WHERE "UserName"='${username}';INSERT INTO "AspNetUsers"("Id","UserName","NormalizedUserName","PasswordHash","SecurityStamp","ConcurrencyStamp","EmailConfirmed","PhoneNumberConfirmed","TwoFactorEnabled","LockoutEnabled","AccessFailedCount") SELECT '${username}','${username}','${username.toUpperCase()}',"PasswordHash",'${randomUUID()}','${randomUUID()}',false,false,false,true,0 FROM "AspNetUsers" WHERE "UserName"='demo';INSERT INTO "AspNetUserRoles" SELECT '${username}',"Id" FROM "AspNetRoles" WHERE "Name"='${role}';`);
+  sql(`DELETE FROM "AspNetUsers" WHERE "UserName"='${username}';INSERT INTO "AspNetUsers"("Id","UserName","NormalizedUserName","PasswordHash","SecurityStamp","ConcurrencyStamp","EmailConfirmed","PhoneNumberConfirmed","TwoFactorEnabled","LockoutEnabled","AccessFailedCount") SELECT '${username}','${username}','${username.toUpperCase()}',"PasswordHash",'${randomUUID()}','${randomUUID()}',false,false,false,true,0 FROM "AspNetUsers" WHERE "UserName"='sagdi';INSERT INTO "AspNetUserRoles" SELECT '${username}',"Id" FROM "AspNetRoles" WHERE "Name"='${role}';`);
  }
  sql(`INSERT INTO "AspNetUserClaims"("UserId","ClaimType","ClaimValue") VALUES('report_op','ComedorId','1');`);
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const errors=[];
  async function login(username){const context=await browser.newContext({viewport:{width:1536,height:960}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/Login');await page.locator('#Username').fill(username);await page.locator('#Password').fill(fs.readFileSync('.local/demo-password','utf8').trim());await Promise.all([page.waitForURL(base+'/'),page.getByRole('button',{name:'Iniciar sesión'}).click()]);return page;}
  try{
-  const p=await login('demo');await p.goto(base+'/Register');await p.locator('#CoordinatorRoomId').selectOption('1');await p.locator('#SelectedServiceType').selectOption('COM');await p.waitForFunction(()=>document.querySelector('#service-total').textContent==='0');
+  const p=await login('sagdi');await p.goto(base+'/Register');await p.locator('#CoordinatorRoomId').selectOption('1');await p.locator('#SelectedServiceType').selectOption('COM');await p.waitForFunction(()=>document.querySelector('#service-total').textContent==='0');
   const token=await p.locator('input[name="__RequestVerificationToken"]').first().inputValue();
   const payload={requestId:randomUUID(),collectorNumber:'40001',numbers:['40001','49001'],roomId:1,serviceType:'COM'};
   const group=await p.request.post(base+'/Pickup?handler=Save',{headers:{RequestVerificationToken:token},data:payload});assert((await group.json()).ok);

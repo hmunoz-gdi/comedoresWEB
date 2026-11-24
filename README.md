@@ -20,7 +20,7 @@ Desde la raíz del repositorio:
 ./scripts/dev.sh
 ```
 
-El script inicia PostgreSQL 17, espera a que esté disponible e inicia la aplicación en el puerto local 5080. Usuario: `demo`. La contraseña aleatoria se conserva en `.local/demo-password`, archivo ignorado por Git. No publicar ese archivo ni sus valores. PostgreSQL está expuesto exclusivamente en loopback con autenticación de confianza para este desarrollo; no es una configuración de producción.
+El script inicia PostgreSQL 17, espera a que esté disponible e inicia la aplicación en el puerto local 5080. Usuario: `sagdi`. La contraseña aleatoria se conserva en `.local/demo-password`, archivo ignorado por Git. No publicar ese archivo ni sus valores. PostgreSQL está expuesto exclusivamente en loopback con autenticación de confianza para este desarrollo; no es una configuración de producción.
 
 Empleados ficticios: `40001` (sin turno especial), `49001` (con turno especial). El script asigna una IP demo de SUBESTACION; la anulación de IP solo funciona en Development. Para probar otro comedor: `Demo__TerminalIp=172.16.60.54 ./scripts/dev.sh`. Por defecto se usa la hora real del servidor convertida a America/Mexico_City.
 
@@ -114,3 +114,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Preparación de publicación en 172.16.2.12 — lunes 23/11/2026](docs/PUBLICACION-172.16.2.12.md).
 
 - [Auditoría administrativa, crédito lateral y ajuste de CREI](docs/AUDITORIA-Y-CREI.md).
+
+- [Renombrar la misma cuenta demo a sagdi en local y producción](docs/RENOMBRAR-DEMO-SAGDI.md).

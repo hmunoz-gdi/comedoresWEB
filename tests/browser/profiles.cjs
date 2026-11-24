@@ -11,7 +11,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  async function quick(p,csrf,extra={},url=base){return (await p.request.post(url+'/Register?handler=Quick',{form:{Number:'40001',RequestId:crypto.randomUUID(),__RequestVerificationToken:csrf,...extra}})).json();}
  async function forbidden(p,url){const r=await p.request.get(base+url);assert.equal(r.status(),403,url);}
  try{
-  const admin=await login('demo',adminPassword);await admin.goto(base+'/Users');
+  const admin=await login('sagdi',adminPassword);await admin.goto(base+'/Users');
   phase='crear cuentas';for(const role of Object.keys(names)){await admin.locator('#Username').fill(names[role]);await admin.locator('#Password').fill(password);await admin.locator('#Profile').selectOption(role);await admin.locator('#RoomId').selectOption(role==='Operador'?'1':'');await Promise.all([admin.waitForNavigation(),admin.locator('button[value=create]').click()]);assert((await admin.locator('.notice').textContent()).includes('Perfil guardado'));}
   const op=await login(names.Operador),cat=await login(names.Catalogo),coord=await login(names.Coordinador);
   phase='navegación y permisos';assert.equal(await op.locator('nav a[href="/Employees"]').count(),0);assert.equal(await cat.locator('nav a[href="/Register"]').count(),0);assert.equal(await coord.locator('nav a[href="/Employees"]').count(),0);

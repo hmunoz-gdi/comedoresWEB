@@ -7,7 +7,7 @@ namespace Comedores.Web.Pages;
 [ResponseCache(NoStore=true,Location=ResponseCacheLocation.None)]
 public class UsersModel(UserManager<IdentityUser> users,AppDb db,ILogger<UsersModel> logger):PageModel {
  [BindProperty(SupportsGet=true)] public string? SelectedUser{get;set;}
- public bool CanResetPasswords=>User.IsInRole(AccessProfiles.Admin)&&string.Equals(User.Identity?.Name,"demo",StringComparison.OrdinalIgnoreCase);
+ public bool CanResetPasswords=>User.IsInRole(AccessProfiles.Admin)&&string.Equals(User.Identity?.Name,AccessProfiles.AdministrationUserName,StringComparison.OrdinalIgnoreCase);
  public bool ExistingSelected{get;set;}
  public bool SelectedAdministrator{get;set;}
  public bool SelectedLocked{get;set;}

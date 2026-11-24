@@ -16,10 +16,10 @@ No cambian las validaciones de empleado activo ni la confirmación por repetici�
 
 1. Detén la aplicación y reemplaza `src` y `scripts` con la versión nueva.
 2. Inicia con el comando habitual y la ruta de fotografías.
-3. **Cierra sesión y vuelve a entrar con `demo` y tu contraseña actual.** Es necesario renovar la sesión para recibir los perfiles nuevos.
+3. **Cierra sesión y vuelve a entrar con `sagdi` y tu contraseña actual.** Es necesario renovar la sesión para recibir los perfiles nuevos.
 4. Abre **Usuarios y perfiles** en el menú izquierdo.
 
-En desarrollo, a la cuenta existente `demo` sin perfiles anteriores se le asignan los perfiles de administración y los tres operativos como acceso inicial de Sistemas. No se cambia su contraseña. Esa cuenta permite preparar las cuentas separadas; no debe utilizarse como operador cotidiano. Su pantalla de registro corresponde a Coordinador, porque cuenta con ese permiso. Las cuentas que ya tengan perfiles asignados no reciben permisos nuevos automáticamente.
+En desarrollo, a la cuenta existente `sagdi` sin perfiles anteriores se le asignan los perfiles de administración y los tres operativos como acceso inicial de Sistemas. No se cambia su contraseña. Esa cuenta permite preparar las cuentas separadas; no debe utilizarse como operador cotidiano. Su pantalla de registro corresponde a Coordinador, porque cuenta con ese permiso. Las cuentas que ya tengan perfiles asignados no reciben permisos nuevos automáticamente.
 
 Además de los tres perfiles operativos existe el permiso interno **Administrador**, que permite gestionar cuentas. La cuenta inicial se conserva y no puede cambiarse de perfil desde el formulario para evitar perder acceso a la administración. Crear otro administrador no está expuesto en este módulo. Fuera del entorno de desarrollo se necesita aprovisionar previamente la cuenta administrativa; no hay creación de administradores ni contraseñas por defecto en producción.
 
@@ -61,7 +61,7 @@ La carpeta de fotografías y los permisos de escritura no cambian. Tampoco se bo
 
 La suite `tests/browser/profiles.cjs` usa dos instancias sobre una misma base **aislada de pruebas**, una a las 12:00 fuera de horario y otra a las 09:00 dentro de desayuno. Crea cuentas ficticias y verifica perfiles, menús, denegación de acceso directo, solicitudes manipuladas, reportes por comedor, selección manual de los tres tipos, confirmación de repetición y revocación de sesiones.
 
-Las suites históricas del reloj, registro rápido y vista horizontal deben utilizar `TEST_USERNAME` con una cuenta **Operador** asignada al comedor de su terminal y `TEST_DEMO_PASSWORD` con su contraseña. La cuenta inicial `demo` ahora tiene selección manual de Coordinador; no representa el flujo del operador. La suite de empleados requiere Catálogo para las pantallas de empleados y una cuenta con permiso de servicios si prueba el ciclo completo; la cuenta administrativa inicial incluye ambos permisos.
+Las suites históricas del reloj, registro rápido y vista horizontal deben utilizar `TEST_USERNAME` con una cuenta **Operador** asignada al comedor de su terminal y `TEST_DEMO_PASSWORD` con su contraseña. La cuenta inicial `sagdi` ahora tiene selección manual de Coordinador; no representa el flujo del operador. La suite de empleados requiere Catálogo para las pantallas de empleados y una cuenta con permiso de servicios si prueba el ciclo completo; la cuenta administrativa inicial incluye ambos permisos.
 
 Consulta [bloqueos y desbloqueos](BLOQUEO-Y-DESBLOQUEO.md): tres intentos fallidos bloquean la cuenta hasta la intervención de administración.
 

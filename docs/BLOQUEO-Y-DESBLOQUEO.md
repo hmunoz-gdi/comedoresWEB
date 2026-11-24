@@ -29,9 +29,9 @@ En la misma pantalla se muestran los últimos 50 movimientos de bloqueo/desbloqu
 
 ## Si se bloquea la propia cuenta administradora
 
-No hagas las primeras pruebas de bloqueo con `demo`: usa una cuenta operativa de prueba.
+No hagas las primeras pruebas de bloqueo con `sagdi`: usa una cuenta operativa de prueba.
 
-Si `demo` queda bloqueada y no hay otro administrador disponible, quien tenga acceso administrativo local a PostgreSQL puede recuperarla:
+Si `sagdi` queda bloqueada y no hay otro administrador disponible, quien tenga acceso administrativo local a PostgreSQL puede recuperarla:
 
 1. Abre pgAdmin y selecciona la base **comedores**.
 2. Abre **Query Tool / Herramienta de consultas**.
@@ -39,7 +39,7 @@ Si `demo` queda bloqueada y no hay otro administrador disponible, quien tenga ac
 4. Revisa que el script apunta únicamente a `DEMO` y ejecútalo.
 5. Vuelve a iniciar sesión con su contraseña habitual.
 
-Este procedimiento no cambia contraseñas ni perfiles; desbloquea únicamente `demo` y deja un movimiento de recuperación local en la bitácora. Requiere acceso administrativo a la base, no está expuesto en la pantalla pública de inicio de sesión. El archivo debe ejecutarse después de arrancar esta versión, para que exista la tabla de seguridad.
+Este procedimiento no cambia contraseñas ni perfiles; desbloquea únicamente `sagdi` y deja un movimiento de recuperación local en la bitácora. Requiere acceso administrativo a la base, no está expuesto en la pantalla pública de inicio de sesión. El archivo debe ejecutarse después de arrancar esta versión, para que exista la tabla de seguridad.
 
 Para otro nombre de administrador se necesita un procedimiento supervisado por Sistemas; no amplíes el UPDATE a todas las cuentas.
 

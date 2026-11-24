@@ -43,9 +43,12 @@ if (app.Environment.IsDevelopment()) {
  var password=app.Configuration["Demo:Password"];
  if(!string.IsNullOrEmpty(password)) {
   var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-  if(await users.FindByNameAsync("demo")==null) {
-   var result=await users.CreateAsync(new IdentityUser {UserName="demo"},password);
-   if(!result.Succeeded) throw new InvalidOperationException("La contraseña demo no cumple la política.");
+  var currentAdministrator=await users.FindByNameAsync(AccessProfiles.AdministrationUserName);
+  var legacyAdministrator=await users.FindByNameAsync(AccessProfiles.LegacyAdministrationUserName);
+  if(currentAdministrator!=null&&legacyAdministrator!=null)throw new InvalidOperationException("Existen sagdi y demo. Revisa las cuentas antes de continuar; no se fusionan ni reemplazan.");
+  if(currentAdministrator==null&&legacyAdministrator==null) {
+   var result=await users.CreateAsync(new IdentityUser {UserName=AccessProfiles.AdministrationUserName},password);
+   if(!result.Succeeded) throw new InvalidOperationException("La contraseña inicial de sagdi no cumple la política.");
   }
  }
 }
@@ -82,7 +85,10 @@ using(var scope=app.Services.CreateScope()) {
  }
  // Primer acceso de administración en desarrollo. No se cambian perfiles ya asignados.
  if(app.Environment.IsDevelopment()) {
-  var demo=await users.FindByNameAsync("demo");
+  var currentAdministrator=await users.FindByNameAsync(AccessProfiles.AdministrationUserName);
+  var legacyAdministrator=await users.FindByNameAsync(AccessProfiles.LegacyAdministrationUserName);
+  if(currentAdministrator!=null&&legacyAdministrator!=null)throw new InvalidOperationException("Existen sagdi y demo. Revisa las cuentas antes de continuar; no se fusionan ni reemplazan.");
+  var demo=currentAdministrator??legacyAdministrator;
   if(demo!=null&&(await users.GetRolesAsync(demo)).Count==0) {
    var assigned=await users.AddToRolesAsync(demo,AccessProfiles.All);
    if(!assigned.Succeeded)throw new InvalidOperationException("No fue posible asignar los perfiles iniciales.");

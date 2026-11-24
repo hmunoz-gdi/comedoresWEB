@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  async function attempt(p,user,pw=pass){await p.goto(base+'/Login');await p.locator('#Username').fill(user);await p.locator('#Password').fill(pw);await Promise.all([p.waitForNavigation(),p.getByRole('button',{name:'Iniciar sesión'}).click()]);}
  async function denied(p,user){await attempt(p,user);await p.locator('#terminal-rejected-dialog').waitFor({state:'visible'});assert((await p.locator('#terminal-rejected-message').textContent()).includes('127.0.0.1'));assert((await p.request.get(base+'/Register')).url().includes('/Login'));}
  try{
-  await attempt(admin,'demo',adminPassword);await admin.waitForURL(base+'/');await admin.goto(base+'/Users');
+  await attempt(admin,'sagdi',adminPassword);await admin.waitForURL(base+'/');await admin.goto(base+'/Users');
   for(const [name,role,room]of [[crei,'Operador','3'],[sub,'Operador','1'],[cat,'Catalogo','']]){await admin.locator('#Username').fill(name);await admin.locator('#Password').fill(pass);await admin.locator('#Profile').selectOption(role);await admin.locator('#RoomId').selectOption(room);await Promise.all([admin.waitForNavigation(),admin.locator('button[value=create]').click()]);assert((await admin.locator('.notice').textContent()).includes('Perfil guardado'));}
   phase='IP no registrada';const operator=await browser.newPage();await denied(operator,crei);assert.equal(sql(`SELECT "AccessFailedCount" FROM "AspNetUsers" WHERE "UserName"='${crei}'`),'0');
   const forged=await browser.newPage({extraHTTPHeaders:{'X-Forwarded-For':'172.16.70.68','Forwarded':'for=172.16.70.68'}});await denied(forged,crei);

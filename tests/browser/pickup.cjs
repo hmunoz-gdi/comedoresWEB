@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  const p=await browser.newPage({viewport:{width:1366,height:768}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
  async function add(id,value,wait){await p.locator(id).fill(value);await p.locator(id).press('Enter');await wait();}
  try{
-  await p.goto(base+'/Login');await p.locator('#Username').fill('demo');await p.locator('#Password').fill(fs.readFileSync('.local/demo-password','utf8').trim());await Promise.all([p.waitForURL(base+'/'),p.getByRole('button',{name:'Iniciar sesión'}).click()]);
+  await p.goto(base+'/Login');await p.locator('#Username').fill('sagdi');await p.locator('#Password').fill(fs.readFileSync('.local/demo-password','utf8').trim());await Promise.all([p.waitForURL(base+'/'),p.getByRole('button',{name:'Iniciar sesión'}).click()]);
   await p.goto(base+'/Register');await p.getByRole('link',{name:'Recoger para compañeros'}).click();
   await p.locator('#pickup-room').selectOption('1');await p.locator('#pickup-type').selectOption('COM');
   await add('#collector-number','40001',()=>p.locator('#member-number').waitFor({state:'visible'}));await p.waitForFunction(()=>!document.querySelector('#member-number').disabled);

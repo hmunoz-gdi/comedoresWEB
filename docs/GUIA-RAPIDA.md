@@ -71,7 +71,7 @@ Esperar `Now listening on`. Abrir en el navegador de ese mismo equipo:
 http://localhost:5080
 ```
 
-Esta dirección es local a la computadora del compañero, no es un enlace público ni una vista previa de la nube. Entrar con usuario `demo` y la contraseña de la aplicación. Mantener la terminal abierta; Ctrl+C detiene el servidor.
+Esta dirección es local a la computadora del compañero, no es un enlace público ni una vista previa de la nube. Entrar con usuario `sagdi` y la contraseña de la aplicación. Mantener la terminal abierta; Ctrl+C detiene el servidor.
 
 El script usa un comedor simulado SUBESTACION y las 08:30 del día del equipo para probar el desayuno, aunque la hora real sea otra. Los consumos ficticios sí se guardan. Para usar la hora real, agregar `-HoraReal` al comando; entonces aplican los horarios del comedor.
 

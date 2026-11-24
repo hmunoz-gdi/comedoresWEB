@@ -13,9 +13,9 @@ Requisitos ya preparados: .NET SDK 10 y PostgreSQL 17 con la base `comedores` va
    Este parámetro permite ejecutar este script en ese proceso; no modifica la política permanente del equipo. Si una política corporativa lo impide, no modificarla: solicitar el procedimiento autorizado a TI.
 4. Esperar a que descargue las dependencias. Necesita acceso a NuGet.
 5. Introducir la contraseña del usuario `postgres`, elegida durante la instalación de PostgreSQL. No se muestra al escribir y no se guarda en un archivo del proyecto.
-6. Elegir una contraseña para la cuenta `demo` de la aplicación: mínimo 12 caracteres, mayúscula, minúscula, número y símbolo. Es una cuenta distinta del usuario de PostgreSQL. Guardarla de forma privada. En siguientes arranques usar esa contraseña; el script no cambia la contraseña de una cuenta ya creada.
+6. Elegir una contraseña para la cuenta `sagdi` de la aplicación: mínimo 12 caracteres, mayúscula, minúscula, número y símbolo. Es una cuenta distinta del usuario de PostgreSQL. Guardarla de forma privada. En siguientes arranques usar esa contraseña; el script no cambia la contraseña de una cuenta ya creada.
 7. Esperar al mensaje `Now listening on`. Abrir el navegador en `http://localhost:5080`. Esta dirección es de TU computadora con la aplicación en ejecución, no una dirección del entorno de nube.
-8. Entrar con usuario `demo` y su contraseña. En Registrar servicio consultar `40001` o `49001`. Son empleados ficticios en una instalación nueva. La cuenta administrativa incluye Coordinador: elegir comedor y tipo de servicio antes de registrar.
+8. Entrar con usuario `sagdi` y su contraseña. En Registrar servicio consultar `40001` o `49001`. Son empleados ficticios en una instalación nueva. La cuenta administrativa incluye Coordinador: elegir comedor y tipo de servicio antes de registrar.
 
 Mantener la terminal abierta mientras usas la aplicación; Ctrl+C la detiene. El arranque usa la IP real de la conexión y la hora real del servidor convertida a Ciudad de México. Ya no simula SUBESTACION automáticamente. Para una prueba explícita de desayuno, agregar `-SimularDesayuno` al comando del paso 3: fija las 08:30 y muestra un aviso visible. Esos consumos se guardan con la hora simulada. `-HoraReal` se conserva como opción compatible, aunque ya es el comportamiento predeterminado.
 
@@ -27,7 +27,7 @@ Al repetir un tipo de servicio en el mismo día aparece un cuadro con el número
 
 ## Perfiles de acceso
 
-Después de actualizar `src` y `scripts`, cierra sesión y entra nuevamente con tu cuenta `demo` y su contraseña habitual. En desarrollo, esta cuenta recibe acceso inicial de administración. Abre **Usuarios y perfiles** para crear cuentas de Operador (con su comedor), Catálogo o Coordinador. Consulta [la guía de perfiles](docs/PERFILES-Y-USUARIOS.md).
+Después de actualizar `src` y `scripts`, cierra sesión y entra nuevamente con tu cuenta `sagdi` y su contraseña habitual. En desarrollo, esta cuenta recibe acceso inicial de administración. Abre **Usuarios y perfiles** para crear cuentas de Operador (con su comedor), Catálogo o Coordinador. Consulta [la guía de perfiles](docs/PERFILES-Y-USUARIOS.md).
 
 Para simular explícitamente un comedor en este equipo puedes añadir `-Comedor SUBESTACION`, `-Comedor PLATAFORMA` o `-Comedor CREI`. Esta opción sustituye la IP real por una terminal de demostración y muestra un aviso. Sin `-Comedor` se usa IP real. Las cuentas de operador deben coincidir con el comedor seleccionado; los coordinadores eligen el comedor y DYN/COM/CEN al registrar, sin restricción de horario.
 
@@ -36,3 +36,5 @@ Para simular explícitamente un comedor en este equipo puedes añadir `-Comedor 
 Puedes añadir `-FechaHoraPrueba "2026-11-06T14:30:00-06:00"` al comando de arranque para elegir fecha y hora sin editar el script. No lo combines con `-HoraReal`. Detén primero con Ctrl+C; la terminal indicará la ruta del archivo ejecutado y la fecha elegida. Consulta [la guía del reloj](docs/RELOJ-EN-LINEA.md) para ejemplos y diagnóstico de copias antiguas o puerto 5080 ocupado.
 
 Para validar operadores por IP real en la red, utiliza `-AccesoRed` sin `-Comedor`, abre `http://IP-DEL-SERVIDOR:5080` desde el equipo autorizado y consulta [la guía de exclusividad por IP](docs/ACCESO-POR-IP.md). `localhost` se identifica como 127.0.0.1 (o ::1), no como la dirección LAN del equipo.
+
+Si tu instalación existente todavía tiene `demo`, sigue [el procedimiento de renombre a sagdi](docs/RENOMBRAR-DEMO-SAGDI.md); no crees otra cuenta ni reemplaces la base.

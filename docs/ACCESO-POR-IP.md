@@ -49,7 +49,7 @@ El comando no lleva `-Comedor`: usa la IP real. `-AccesoRed` permite escuchar co
 
 En el equipo del comedor, abrir **http://IP-DEL-SERVIDOR:5080**. El servidor obtiene la IP del cliente que abre el navegador. Si servidor y navegador están en el mismo equipo, utilizar también su dirección LAN para esta comprobación.
 
-**localhost no es la IP LAN**: se identifica como 127.0.0.1 o ::1. No registrar una IP de localhost ni de un proxy como sustituto de todas las terminales. Con la base inicial, esas direcciones no están autorizadas para operadores. La cuenta `demo` permite entrar para administrar aunque el equipo no sea un comedor.
+**localhost no es la IP LAN**: se identifica como 127.0.0.1 o ::1. No registrar una IP de localhost ni de un proxy como sustituto de todas las terminales. Con la base inicial, esas direcciones no están autorizadas para operadores. La cuenta `sagdi` permite entrar para administrar aunque el equipo no sea un comedor.
 
 ## Pruebas explícitas en una sola computadora
 

@@ -11,7 +11,7 @@
 <p>Asigna una contraseña nueva. La contraseña anterior no se puede consultar. Esta acción no desbloquea la cuenta ni cambia sus perfiles o comedor.</p>
 <form method="post" asp-page-handler="ResetPassword" id="reset-password-form">
 <input type="hidden" name="accountName" value="@Model.Username"/>
-<label for="admin-password">Tu contraseña actual de demo</label><input id="admin-password" name="adminPassword" type="password" autocomplete="current-password" required maxlength="256"/>
+<label for="admin-password">Tu contraseña administrativa actual</label><input id="admin-password" name="adminPassword" type="password" autocomplete="current-password" required maxlength="256"/>
 <label for="new-password">Nueva contraseña del usuario</label><input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="256"/>
 <label for="confirm-password">Confirmar nueva contraseña</label><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="256"/>
 <p>Al menos 12 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos.</p>

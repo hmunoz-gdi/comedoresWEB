@@ -26,11 +26,11 @@ try {
     $databasePassword = Read-PrivateText 'Contrasena de postgres (no se muestra)'
     $quotedPassword = $databasePassword.Replace('"','""')
     $env:ConnectionStrings__Comedores = 'Host=127.0.0.1;Port=5432;Database=comedores;Username=postgres;Password="' + $quotedPassword + '"'
-    Write-Host 'La primera vez, elige una contrasena para el usuario demo de la aplicacion.'
+    Write-Host 'La primera vez, elige una contrasena para el usuario sagdi de la aplicacion.'
     Write-Host 'Minimo 12 caracteres, con mayuscula, minuscula, numero y simbolo. En siguientes arranques usa la misma.'
-    $env:Demo__Password = Read-PrivateText 'Contrasena de la cuenta demo (no se muestra)'
+    $env:Demo__Password = Read-PrivateText 'Contrasena de la cuenta sagdi (no se muestra)'
     if ($env:Demo__Password.Length -lt 12 -or $env:Demo__Password -cnotmatch '[A-Z]' -or $env:Demo__Password -cnotmatch '[a-z]' -or $env:Demo__Password -notmatch '[0-9]' -or $env:Demo__Password -notmatch '[^a-zA-Z0-9]') {
-        throw 'La contrasena demo no cumple los requisitos indicados.'
+        throw 'La contrasena sagdi no cumple los requisitos indicados.'
     }
     if ($RutaFotos) {
         $env:EmployeePhotos__Directory = $RutaFotos
@@ -54,7 +54,7 @@ try {
     else { Write-Host 'HORA REAL del servidor, convertida a Ciudad de Mexico. Tipo de servicio segun el horario del comedor.' }
     if ($AccesoRed) { Write-Host 'Cuando aparezca Now listening on, abre http://IP-DEL-SERVIDOR:5080 desde el equipo del comedor. La IP del navegador debe estar autorizada en Terminals.' }
     else { Write-Host 'Cuando aparezca Now listening on, abre http://localhost:5080. Con IP real, localhost se identifica como 127.0.0.1; para operadores en red usa -AccesoRed y la direccion LAN.' }
-    Write-Host 'Acceso inicial de administracion: demo. Para operacion diaria usa una cuenta con su perfil asignado.'
+    Write-Host 'Acceso inicial de administracion: sagdi. Para operacion diaria usa una cuenta con su perfil asignado.'
     Write-Host 'Para detener la aplicacion presiona Ctrl+C.'
     dotnet run --project src/Comedores.Web --no-launch-profile -- --urls $urlEscucha "--Demo:Now=$env:Demo__Now"
     if ($LASTEXITCODE -ne 0) { throw 'La aplicacion se detuvo con un error. Revisa los mensajes anteriores.' }

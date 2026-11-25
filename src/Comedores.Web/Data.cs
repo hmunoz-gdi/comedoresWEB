@@ -63,6 +63,8 @@ public class AccountSecurityEvent {
  public string Reason{get;set;}="";
 }
 public class AppDb(DbContextOptions<AppDb> options, IHttpContextAccessor? contextAccessor=null) : IdentityDbContext<IdentityUser>(options) {
+ public DbSet<FeedbackEntry> FeedbackEntries=>Set<FeedbackEntry>();
+ public DbSet<FeedbackFollowUp> FeedbackFollowUps=>Set<FeedbackFollowUp>();
  public DbSet<AuditLog> AuditLogs=>Set<AuditLog>();
  public DbSet<PickupBatch> PickupBatches=>Set<PickupBatch>();
  public DbSet<AccountSecurityEvent> AccountSecurityEvents=>Set<AccountSecurityEvent>();
@@ -100,6 +102,14 @@ public class AppDb(DbContextOptions<AppDb> options, IHttpContextAccessor? contex
  }
  protected override void OnModelCreating(ModelBuilder b) {
   base.OnModelCreating(b);
+  b.Entity<FeedbackEntry>().Ignore(x=>x.Folio);
+  b.Entity<FeedbackEntry>().HasIndex(x=>x.RequestId).IsUnique();
+  b.Entity<FeedbackEntry>().HasIndex(x=>new{x.CreatedAt,x.Id});
+  b.Entity<FeedbackEntry>().HasIndex(x=>new{x.DiningRoomId,x.Status});
+  b.Entity<FeedbackEntry>().HasOne<Employee>().WithMany().HasForeignKey(x=>x.EmployeeId).OnDelete(DeleteBehavior.Restrict);
+  b.Entity<FeedbackEntry>().HasOne<DiningRoom>().WithMany().HasForeignKey(x=>x.DiningRoomId).OnDelete(DeleteBehavior.Restrict);
+  b.Entity<FeedbackFollowUp>().HasOne<FeedbackEntry>().WithMany().HasForeignKey(x=>x.FeedbackEntryId).OnDelete(DeleteBehavior.Restrict);
+  b.Entity<FeedbackFollowUp>().HasIndex(x=>new{x.FeedbackEntryId,x.OccurredAt});
   b.Entity<AuditLog>().HasIndex(x=>x.SourceKey).IsUnique();
   b.Entity<AuditLog>().HasIndex(x=>new{x.OccurredAt,x.Id});
   b.Entity<AuditLog>().HasIndex(x=>new{x.Actor,x.OccurredAt});

@@ -1,0 +1,19 @@
+@page
+@model FeedbackModel
+@{ViewData["Title"]="Tu opinión cuenta";ViewData["BodyClass"]="feedback-page";}
+<section class="module-banner feedback-banner"><div><p class="eyebrow">SICOM · ESCUCHAMOS A NUESTRA GENTE</p><h1>Tu opinión cuenta</h1><p>Quejas, sugerencias y reconocimientos para mejorar tu comedor.</p></div><span class="feedback-banner-icon" aria-hidden="true">☏</span></section>
+<div class="feedback-capture panel">
+<p>Escribe tu número de empleado, selecciona el tipo y comparte tu mensaje.</p>
+@if(!Model.Manual){<p>Comedor: <strong>@Model.RoomName</strong></p>}
+<form method="post" id="feedback-form">
+<div asp-validation-summary="All" class="notice" role="alert"></div>
+<input type="hidden" asp-for="RequestId"/>
+@if(Model.Manual){<label asp-for="RoomId">Comedor</label><select asp-for="RoomId" required><option value="">Selecciona comedor</option>@foreach(var room in Model.Rooms){<option value="@room.Id">@room.Name</option>}</select>}
+<label asp-for="Number">Número de empleado</label><input asp-for="Number" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" autocomplete="off" required autofocus/>
+<label asp-for="Kind">Tipo de comentario</label><select asp-for="Kind" required><option value="">Selecciona una opción</option>@foreach(var kind in FeedbackService.Kinds){<option>@kind</option>}</select>
+<label asp-for="Message">Cuéntanos qué pasó o qué podemos mejorar</label><textarea asp-for="Message" rows="7" minlength="10" maxlength="3000" required placeholder="Escribe tu mensaje aquí…"></textarea>
+<p class="export-help">Entre 10 y 3000 caracteres. Tu comentario será atendido por coordinación y administración. El número proporcionado identifica al comensal; no solicita su contraseña.</p>
+<button type="submit">Enviar comentario</button>
+</form></div>
+@if(!string.IsNullOrEmpty(Model.Notice)){<dialog id="feedback-received" class="registration-dialog" aria-labelledby="feedback-received-title"><h2 id="feedback-received-title">Comentario recibido</h2><p>@Model.Notice</p><form method="dialog" class="dialog-actions"><button autofocus>Aceptar</button></form></dialog>}
+@section Scripts{<script src="~/js/employee-number.js" asp-append-version="true"></script><script src="~/js/feedback.js" asp-append-version="true"></script>}

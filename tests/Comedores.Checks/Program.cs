@@ -344,6 +344,32 @@ try {
   db.AuditLogs.AddRange(Enumerable.Range(0,105).Select(i=>new AuditLog{Actor="paginacion",Target=i.ToString(),Action="Prueba",OccurredAt=DateTime.UtcNow}));await db.SaveChangesAsync();
   var paged=new Comedores.Web.Pages.AuditModel(db){From=today,To=today,Actor="paginacion",PageNumber=2};await paged.OnGetAsync();Check(paged.Total==105&&paged.Pages==2&&paged.Rows.Count==5,"Reporte de auditoría pagina y filtra sin truncar el total");
  }finally{await seed.Database.EnsureDeletedAsync();}
+ var feedbackOptions=new DbContextOptionsBuilder<AppDb>().UseNpgsql(cs+"_feedback").Options;
+ await using(var db=new AppDb(feedbackOptions))try{
+  await db.Database.EnsureCreatedAsync();await FeedbackService.EnsureSchemaAsync(db);await FeedbackService.EnsureSchemaAsync(db);
+  db.DiningRooms.AddRange(new DiningRoom{Id=1,Name="SUBESTACION"},new DiningRoom{Id=2,Name="PLATAFORMA"});db.Terminals.Add(new Terminal{Ip="10.0.0.1",DiningRoomId=1});
+  db.Employees.AddRange(new Employee{Id=1,Number="40001",Name="Comensal ficticio",Active=true},new Employee{Id=2,Number="40002",Name="Baja ficticia",Active=false});await db.SaveChangesAsync();
+  System.Security.Claims.ClaimsPrincipal Person(string role,string name="operador-qsr")=>new(new System.Security.Claims.ClaimsIdentity(new[]{new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name,name),new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier,name),new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role,role),new System.Security.Claims.Claim(AccessProfiles.RoomClaim,"1")},"test"));
+  var op=Person(AccessProfiles.Operator);var coord=Person(AccessProfiles.Coordinator,"coordinador-qsr");var service=new FeedbackService(db,Service(db));
+  Check(!(await service.SubmitAsync(Person(AccessProfiles.Catalog),"10.0.0.1",Guid.NewGuid(),"40001","Queja","Mensaje ficticio válido",1)).Ok,"Catálogo no puede capturar comentarios");
+  Check(!(await service.SubmitAsync(op,"10.0.0.1",Guid.NewGuid(),"99999","Queja","Mensaje ficticio válido",1)).Ok&&!(await service.SubmitAsync(op,"10.0.0.1",Guid.NewGuid(),"40002","Queja","Mensaje ficticio válido",1)).Ok,"Comentarios requieren empleado existente y activo");
+  Check(!(await service.SubmitAsync(op,"10.0.0.1",Guid.NewGuid(),"40001","Otra","Mensaje ficticio válido",1)).Ok&&!(await service.SubmitAsync(op,"10.0.0.1",Guid.NewGuid(),"40001","Queja","corto",1)).Ok,"Tipo y longitud se validan en servidor");
+  var feedbackRequest=Guid.NewGuid();const string body="=SUM(A1:A2) Mensaje ficticio de prueba";var received=await service.SubmitAsync(op,"10.0.0.1",feedbackRequest,"40001","Queja",body,2);Check(received.Ok,"Operador recibe comentario y obtiene folio");
+  var entry=await db.FeedbackEntries.AsNoTracking().SingleAsync();Check(entry.DiningRoomId==1&&entry.Status=="Pendiente"&&Math.Abs((entry.CreatedAt-DateTime.UtcNow).TotalSeconds)<15,"Comedor deriva de terminal, estado inicial pendiente y fecha real sin simulación");
+  Check((await service.SubmitAsync(op,"10.0.0.1",feedbackRequest,"40001","Queja",body,2)).Id==received.Id&&await db.FeedbackEntries.CountAsync()==1,"Reenvío conserva folio sin duplicar mensaje");
+  Check(!(await service.SubmitAsync(op,"10.0.0.1",feedbackRequest,"40001","Queja","Otro mensaje distinto",2)).Ok&&!(await service.SubmitAsync(Person(AccessProfiles.Operator,"otro-operador"),"10.0.0.1",feedbackRequest,"40001","Queja",body,2)).Ok,"No se reutiliza folio para otro contenido u operador");
+  var concurrentRequest=Guid.NewGuid();async Task<FeedbackResult> ConcurrentSubmit(){await using var target=new AppDb(feedbackOptions);return await new FeedbackService(target,Service(target)).SubmitAsync(op,"10.0.0.1",concurrentRequest,"40001","Sugerencia","Una sugerencia ficticia válida",1);}
+  var concurrent=await Task.WhenAll(ConcurrentSubmit(),ConcurrentSubmit());Check(concurrent.All(r=>r.Ok)&&concurrent.Select(r=>r.Id).Distinct().Count()==1&&await db.FeedbackEntries.CountAsync()==2,"Envíos simultáneos del mismo formulario producen un comentario");
+  Check(!(await service.FollowUpAsync(op,"10.0.0.1",entry.Id,1,"Resuelto","Intento del operador")).Ok,"Operador no puede atender comentarios");
+  Check((await service.FollowUpAsync(coord,"10.0.0.1",entry.Id,1,"En atención","Se revisará el caso ficticio")).Ok,"Coordinador registra atención");
+  Check(!(await service.FollowUpAsync(coord,"10.0.0.1",entry.Id,1,"Resuelto","Intento desde pantalla anterior")).Ok&&await db.FeedbackFollowUps.CountAsync()==1,"Pantalla desactualizada no sobrescribe ni duplica atención");
+  async Task<FeedbackResult> ConcurrentFollow(){await using var target=new AppDb(feedbackOptions);return await new FeedbackService(target,Service(target)).FollowUpAsync(Person(AccessProfiles.Admin,"sagdi"),"10.0.0.1",entry.Id,2,"Resuelto","Se completó la atención ficticia");}
+  var updates=await Task.WhenAll(ConcurrentFollow(),ConcurrentFollow());Check(updates.Count(r=>r.Ok)==1&&await db.FeedbackFollowUps.CountAsync()==2,"Atención simultánea sólo guarda una transición por versión");
+  Check((await db.FeedbackEntries.AsNoTracking().SingleAsync(f=>f.Id==entry.Id)).Message==body&&!await db.Consumptions.AnyAsync(),"Seguimiento conserva mensaje original y no crea consumos");
+  var today=DateOnly.FromDateTime(MealService.Local(DateTime.UtcNow));var board=new Comedores.Web.Pages.FeedbackBoardModel(db){From=today,To=today,RoomId=1,Kind="Queja",Status="Resuelto",Number="40001"};await board.OnGetAsync();Check(board.Total==1&&board.ByKind.GetValueOrDefault("Queja")==1&&board.ByStatus.GetValueOrDefault("Resuelto")==1,"Tablero e indicadores respetan filtros combinados");
+  board.PageContext=new Microsoft.AspNetCore.Mvc.RazorPages.PageContext{HttpContext=new Microsoft.AspNetCore.Http.DefaultHttpContext{User=coord}};var export=(Microsoft.AspNetCore.Mvc.FileContentResult)await board.OnGetCsvAsync();Check(System.Text.Encoding.UTF8.GetString(export.FileContents).Contains("'=SUM"),"CSV de comentarios neutraliza fórmulas");
+  Check(await db.AuditLogs.CountAsync(a=>a.Action=="Recepción de comentario")==2&&await db.AuditLogs.CountAsync(a=>a.Action=="Atención de comentario")==2&&!await db.AuditLogs.AnyAsync(a=>a.Detail.Contains(body)),"Auditoría registra recepción y atención sin copiar el mensaje sensible");
+ }finally{await db.Database.EnsureDeletedAsync();}
  Console.WriteLine($"{checks} comprobaciones completadas.");
 } finally { await using var db=Db(); await db.Database.EnsureDeletedAsync(); NpgsqlConnection.ClearAllPools(); }
 class DevEnvironment:IWebHostEnvironment {

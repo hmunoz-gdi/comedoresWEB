@@ -14,14 +14,17 @@ builder.Services.AddAuthorization(o=> {
  o.AddPolicy("Services",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator));
  o.AddPolicy("Reports",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator,AccessProfiles.Admin));
  o.AddPolicy("Catalog",p=>p.RequireRole(AccessProfiles.Catalog));
+ o.AddPolicy("FeedbackCapture",p=>p.RequireRole(AccessProfiles.Operator,AccessProfiles.Coordinator,AccessProfiles.Admin));
+ o.AddPolicy("FeedbackManagement",p=>p.RequireRole(AccessProfiles.Coordinator,AccessProfiles.Admin));
  o.AddPolicy("Audit",p=>p.RequireRole(AccessProfiles.Admin));
  o.AddPolicy("Users",p=>p.RequireRole(AccessProfiles.Admin));
 });
 builder.Services.ConfigureApplicationCookie(o=>o.AccessDeniedPath="/Denied");
-builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Reports"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AuthorizePage("/Audit","Audit"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
+builder.Services.AddRazorPages(o=> { o.Conventions.AuthorizeFolder("/"); o.Conventions.AuthorizePage("/Register","Services"); o.Conventions.AuthorizePage("/Pickup","Services"); o.Conventions.AuthorizePage("/Reports","Reports"); o.Conventions.AuthorizePage("/Employees","Catalog"); o.Conventions.AuthorizePage("/Users","Users"); o.Conventions.AuthorizePage("/Audit","Audit"); o.Conventions.AuthorizePage("/Feedback","FeedbackCapture"); o.Conventions.AuthorizePage("/FeedbackBoard","FeedbackManagement"); o.Conventions.AuthorizePage("/FeedbackDetail","FeedbackManagement"); o.Conventions.AllowAnonymousToPage("/Login"); o.Conventions.AllowAnonymousToPage("/Error"); });
 builder.Services.Configure<SecurityStampValidatorOptions>(o=>o.ValidationInterval=TimeSpan.Zero);
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<PickupService>();
+builder.Services.AddScoped<FeedbackService>();
 builder.Services.AddScoped<ConsumptionManagementService>();
 builder.Services.AddScoped<EmployeePhotos>();
 var app = builder.Build();
@@ -78,6 +81,7 @@ using(var scope=app.Services.CreateScope()) {
  """);
  await ConsumptionManagementService.EnsureSchemaAsync(securityDb);
  await AuditLog.EnsureSchemaAsync(securityDb);
+ await FeedbackService.EnsureSchemaAsync(securityDb);
  var roles=scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
  var users=scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
  foreach(var role in AccessProfiles.All)if(!await roles.RoleExistsAsync(role)) {
@@ -119,7 +123,7 @@ app.Use(async(context,next)=>{
  var handler=context.Request.Query["handler"].ToString().ToLowerInvariant();var path=context.Request.Path.Value??"";
  var denied=context.Response.StatusCode==403||(context.Response.StatusCode==302&&context.Response.Headers.Location.ToString().Contains("/Denied",StringComparison.OrdinalIgnoreCase));
  if(actor!=null&&(context.Response.StatusCode==200||denied)&&context.Request.Method=="GET"&&
-    (new[]{"/Reports","/Audit","/Users","/Employees","/Pickup","/Register"}.Contains(path,StringComparer.OrdinalIgnoreCase))&&
+    (new[]{"/Reports","/Audit","/Users","/Employees","/Pickup","/Register","/FeedbackBoard","/FeedbackDetail"}.Contains(path,StringComparer.OrdinalIgnoreCase))&&
     (handler==""||handler=="csv"||handler=="lookup")){
   var db=context.RequestServices.GetRequiredService<AppDb>();
   var target=path;

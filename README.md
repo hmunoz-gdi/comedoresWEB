@@ -116,3 +116,5 @@ Procedimiento local con respaldo y transacción: [Reiniciar catálogo](docs/REIN
 - [Auditoría administrativa, crédito lateral y ajuste de CREI](docs/AUDITORIA-Y-CREI.md).
 
 - [Renombrar la misma cuenta demo a sagdi en local y producción](docs/RENOMBRAR-DEMO-SAGDI.md).
+
+- [Quejas, sugerencias, reconocimientos y tablero de atención al comensal](docs/QUEJAS-SUGERENCIAS-RECONOCIMIENTOS.md).

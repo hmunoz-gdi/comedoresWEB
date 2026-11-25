@@ -44,7 +44,7 @@ public class FeedbackService(AppDb db,MealService meals){
  public async Task<FeedbackResult> SubmitAsync(ClaimsPrincipal user,string ip,Guid requestId,string? number,string? kind,string? topic,string? message,int? roomId){
   if(!CanSubmit(user)||user.Identity?.IsAuthenticated!=true)return new(false,"Tu perfil no permite recibir comentarios.");
   var text=message?.Trim()??"";
-  if(requestId==Guid.Empty||!EmployeeNumber.IsValid(number??"")||!Kinds.Contains(kind??"")||!Topics.Contains(topic??"")||text.Length is <10 or >3000||text.Contains('\0'))return new(false,"Indica un número válido, el tipo, el tema y un mensaje entre 10 y 3000 caracteres.");
+  if(requestId==Guid.Empty||!EmployeeNumber.IsValid(number??"")||!Kinds.Contains(kind??"")||!Topics.Contains(topic??"")||text.Length is <10 or >500||text.Contains('\0'))return new(false,"Indica un número válido, el tipo, el tema y un mensaje entre 10 y 500 caracteres.");
   var denied=await meals.OperatorAccessErrorAsync(user,ip);if(denied!=null)return new(false,denied);
   var room=CanManage(user)?await db.DiningRooms.SingleOrDefaultAsync(r=>r.Id==roomId):(await meals.Terminal(ip))?.DiningRoom;
   if(room==null)return new(false,"Selecciona un comedor válido o utiliza una terminal autorizada.");

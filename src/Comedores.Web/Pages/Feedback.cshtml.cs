@@ -9,7 +9,7 @@ public class FeedbackModel(AppDb db,MealService meals,FeedbackService feedback,E
  [BindProperty,Required(ErrorMessage="Escribe tu número de empleado."),RegularExpression("^[0-9]{1,5}$",ErrorMessage="El número admite de 1 a 5 dígitos.")] public string Number{get;set;}="";
  [BindProperty,Required(ErrorMessage="Selecciona el tipo de comentario.")] public string Kind{get;set;}="";
  [BindProperty,Required(ErrorMessage="Selecciona el tema de tu comentario.")] public string Topic{get;set;}="";
- [BindProperty,Required(ErrorMessage="Escribe tu comentario."),StringLength(3000,MinimumLength=10,ErrorMessage="El comentario debe tener entre 10 y 3000 caracteres.")] public string Message{get;set;}="";
+ [BindProperty,Required(ErrorMessage="Escribe tu comentario."),StringLength(500,MinimumLength=10,ErrorMessage="El comentario debe tener entre 10 y 500 caracteres.")] public string Message{get;set;}="";
  [BindProperty] public Guid RequestId{get;set;}=Guid.NewGuid();
  [BindProperty(SupportsGet=true)] public int? RoomId{get;set;}
  [TempData] public string? Notice{get;set;}

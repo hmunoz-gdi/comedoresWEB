@@ -13,8 +13,8 @@
 <div id="feedback-employee" class="feedback-employee" role="status" aria-live="polite" hidden><div class="feedback-avatar"><img id="feedback-employee-photo" alt="Fotografía del empleado" hidden/><span>Sin foto</span></div><strong id="feedback-employee-name"></strong></div>
 <label asp-for="Kind">Tipo de comentario</label><select asp-for="Kind" required><option value="">Selecciona una opción</option>@foreach(var kind in FeedbackService.Kinds){<option>@kind</option>}</select>
 <label asp-for="Topic">¿Sobre qué es tu comentario?</label><select asp-for="Topic" required><option value="">Selecciona el tema</option>@foreach(var topic in FeedbackService.Topics){<option>@topic</option>}</select>
-<label asp-for="Message">Cuéntanos qué pasó o qué podemos mejorar</label><textarea asp-for="Message" rows="7" minlength="10" maxlength="3000" required placeholder="Escribe tu mensaje aquí…"></textarea>
-<p class="export-help">Entre 10 y 3000 caracteres. Tu comentario será atendido por coordinación y administración. El número proporcionado identifica al comensal; no solicita su contraseña.</p>
+<label asp-for="Message">Cuéntanos qué pasó o qué podemos mejorar</label><textarea asp-for="Message" rows="7" minlength="10" maxlength="500" required placeholder="Escribe tu mensaje aquí…"></textarea>
+<p class="export-help">Entre 10 y 500 caracteres. Tu comentario será atendido por coordinación y administración. El número proporcionado identifica al comensal; no solicita su contraseña.</p>
 <button type="submit">Enviar comentario</button>
 </form></div>
 @if(!string.IsNullOrEmpty(Model.Notice)){<dialog id="feedback-received" class="registration-dialog" aria-labelledby="feedback-received-title"><h2 id="feedback-received-title">Comentario recibido</h2><p>@Model.Notice</p><form method="dialog" class="dialog-actions"><button autofocus>Aceptar</button></form></dialog>}

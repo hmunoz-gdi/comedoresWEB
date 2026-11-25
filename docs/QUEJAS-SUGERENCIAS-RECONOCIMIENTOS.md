@@ -9,7 +9,7 @@ En el menú, Inicio y la pantalla Registrar servicio aparece **Tu opinión cuent
 1. Número de empleado, de uno a cinco dígitos, existente y activo.
 2. Tipo, en un combo: **Queja**, **Sugerencia** o **Reconocimiento**.
 3. Tema, en el combo **¿Sobre qué es tu comentario?**: **Comida y bebidas**, **Servicio y tiempos de atención**, **Trato del personal**, **Limpieza e higiene**, **Instalaciones y equipo** u **Otro tema**.
-4. Mensaje de 10 a 3000 caracteres.
+4. Mensaje de 10 a 500 caracteres.
 
 Para Operador el comedor se obtiene de su terminal autorizada y asignación; no se puede cambiar mediante el formulario ni falsificando su parámetro. Coordinador y Administrador pueden recibir comentarios seleccionando el comedor, pues trabajan también desde equipos administrativos.
 

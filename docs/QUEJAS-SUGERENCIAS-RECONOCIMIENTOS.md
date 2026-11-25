@@ -24,7 +24,7 @@ La recepción no depende del horario de desayuno/comida/cena, no requiere regist
 Incluye:
 
 - Filtros de fechas, comedor, tipo, tema, estado y número de empleado.
-- Total y cantidades por **Pendiente**, **En atención** y **Resuelto**.
+- Total y cantidades por **Pendiente** (ámbar), **En atención** (azul) y **Resuelto** (verde). Las tarjetas, etiquetas del grid y estados del detalle e historial comparten estos colores, conservando siempre el texto.
 - Gráficas por tipo de comentario y por tema.
 - Tabla con folio, fecha CDMX, comedor, número, nombre del catálogo al recibir, tipo, tema y estado.
 - Paginación de 50 filas y exportación CSV/Excel de hasta 10 000 comentarios, respetando filtros. Periodo máximo de 366 días de diferencia entre fechas.

@@ -13,7 +13,7 @@ En el menú, Inicio y la pantalla Registrar servicio aparece **Tu opinión cuent
 
 Para Operador el comedor se obtiene de su terminal autorizada y asignación; no se puede cambiar mediante el formulario ni falsificando su parámetro. Coordinador y Administrador pueden recibir comentarios seleccionando el comedor, pues trabajan también desde equipos administrativos.
 
-Al enviar, muestra un **folio QSR**, deja constancia de fecha real y sesión receptora y limpia los campos para el siguiente comensal. No muestra al operador una lista de comentarios ni los datos completos del empleado consultado. Si hay errores, conserva la captura para corregirla. El número identifica una cuenta del catálogo; por sí solo **no autentica la autoría** de quien redactó el mensaje.
+Al enviar, muestra un **folio QSR**, deja constancia de fecha real y sesión receptora y limpia los campos para el siguiente comensal. Muestra nombre y foto pequeña al consultar el número de empleado para confirmar la identificación. Cambiar el número limpia la vista anterior; finalizar el envío limpia todos los datos del comensal. No muestra al operador una lista de comentarios. Si hay errores, conserva la captura para corregirla. El número identifica una cuenta del catálogo; por sí solo **no autentica la autoría** de quien redactó el mensaje.
 
 La recepción no depende del horario de desayuno/comida/cena, no requiere registrar un consumo y no incrementa el contador de servicios. Usa hora real del servidor, incluso si la comida se está probando con fecha simulada. Cada nuevo formulario admite otro comentario; los reintentos del mismo envío conservan el folio y no duplican filas.
 
@@ -29,7 +29,7 @@ Incluye:
 - Tabla con folio, fecha CDMX, comedor, número, nombre del catálogo al recibir, tipo, tema y estado.
 - Paginación de 50 filas y exportación CSV/Excel de hasta 10 000 comentarios, respetando filtros. Periodo máximo de 366 días de diferencia entre fechas.
 
-Los indicadores representan los filtros consultados. Se actualizan al consultar o recargar; no se agrega recarga automática que interrumpa una nota en edición. El CSV contiene el comentario original y estado actual; el historial completo se consulta dentro del folio.
+Los indicadores representan los filtros consultados. Se actualizan al consultar o recargar; no se agrega recarga automática que interrumpa una nota en edición. El grid y detalle muestran una foto pequeña del catálogo actual (o «Sin foto»), junto al nombre conservado al recibir el comentario. La foto se consulta mediante una ruta autenticada, sin copiar archivos ni agregar fotos al CSV. El CSV contiene el comentario original y estado actual; el historial completo se consulta dentro del folio.
 
 ## Atención e historial
 

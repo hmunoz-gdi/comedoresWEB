@@ -10,6 +10,7 @@
 <input type="hidden" asp-for="RequestId"/>
 @if(Model.Manual){<label asp-for="RoomId">Comedor</label><select asp-for="RoomId" required><option value="">Selecciona comedor</option>@foreach(var room in Model.Rooms){<option value="@room.Id">@room.Name</option>}</select>}
 <label asp-for="Number">Número de empleado</label><input asp-for="Number" inputmode="numeric" maxlength="5" pattern="[0-9]{1,5}" autocomplete="off" required autofocus/>
+<div id="feedback-employee" class="feedback-employee" role="status" aria-live="polite" hidden><div class="feedback-avatar"><img id="feedback-employee-photo" alt="Fotografía del empleado" hidden/><span>Sin foto</span></div><strong id="feedback-employee-name"></strong></div>
 <label asp-for="Kind">Tipo de comentario</label><select asp-for="Kind" required><option value="">Selecciona una opción</option>@foreach(var kind in FeedbackService.Kinds){<option>@kind</option>}</select>
 <label asp-for="Topic">¿Sobre qué es tu comentario?</label><select asp-for="Topic" required><option value="">Selecciona el tema</option>@foreach(var topic in FeedbackService.Topics){<option>@topic</option>}</select>
 <label asp-for="Message">Cuéntanos qué pasó o qué podemos mejorar</label><textarea asp-for="Message" rows="7" minlength="10" maxlength="3000" required placeholder="Escribe tu mensaje aquí…"></textarea>

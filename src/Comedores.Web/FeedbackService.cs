@@ -15,6 +15,7 @@ public class FeedbackEntry {
  public string EmployeeName{get;set;}="";
  public int DiningRoomId{get;set;}
  public string Kind{get;set;}="";
+ public string Topic{get;set;}="Sin clasificar";
  public string Message{get;set;}="";
  public string Status{get;set;}="Pendiente";
  public string ReceivedBy{get;set;}="";
@@ -35,17 +36,19 @@ public class FeedbackFollowUp {
 public record FeedbackResult(bool Ok,string Message,long? Id=null);
 public class FeedbackService(AppDb db,MealService meals){
  public static readonly string[] Kinds=["Queja","Sugerencia","Reconocimiento"];
+ public const string LegacyTopic="Sin clasificar";
+ public static readonly string[] Topics=["Comida y bebidas","Servicio y tiempos de atención","Trato del personal","Limpieza e higiene","Instalaciones y equipo","Otro tema"];
  public static readonly string[] Statuses=["Pendiente","En atención","Resuelto"];
  public static bool CanManage(ClaimsPrincipal user)=>user.IsInRole(AccessProfiles.Coordinator)||user.IsInRole(AccessProfiles.Admin);
  public static bool CanSubmit(ClaimsPrincipal user)=>AccessProfiles.Services(user)||user.IsInRole(AccessProfiles.Admin);
- public async Task<FeedbackResult> SubmitAsync(ClaimsPrincipal user,string ip,Guid requestId,string? number,string? kind,string? message,int? roomId){
+ public async Task<FeedbackResult> SubmitAsync(ClaimsPrincipal user,string ip,Guid requestId,string? number,string? kind,string? topic,string? message,int? roomId){
   if(!CanSubmit(user)||user.Identity?.IsAuthenticated!=true)return new(false,"Tu perfil no permite recibir comentarios.");
   var text=message?.Trim()??"";
-  if(requestId==Guid.Empty||!EmployeeNumber.IsValid(number??"")||!Kinds.Contains(kind??"")||text.Length is <10 or >3000||text.Contains('\0'))return new(false,"Indica un número válido, el tipo y un mensaje entre 10 y 3000 caracteres.");
+  if(requestId==Guid.Empty||!EmployeeNumber.IsValid(number??"")||!Kinds.Contains(kind??"")||!Topics.Contains(topic??"")||text.Length is <10 or >3000||text.Contains('\0'))return new(false,"Indica un número válido, el tipo, el tema y un mensaje entre 10 y 3000 caracteres.");
   var denied=await meals.OperatorAccessErrorAsync(user,ip);if(denied!=null)return new(false,denied);
   var room=CanManage(user)?await db.DiningRooms.SingleOrDefaultAsync(r=>r.Id==roomId):(await meals.Terminal(ip))?.DiningRoom;
   if(room==null)return new(false,"Selecciona un comedor válido o utiliza una terminal autorizada.");
-  var fingerprint=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new{Number=number,Kind=kind,Message=text,Room=room.Id,User=user.FindFirstValue(ClaimTypes.NameIdentifier)??user.Identity.Name}))));
+  var fingerprint=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new{Number=number,Kind=kind,Topic=topic,Message=text,Room=room.Id,User=user.FindFirstValue(ClaimTypes.NameIdentifier)??user.Identity.Name}))));
   await using var tx=await db.Database.BeginTransactionAsync();
   var key=System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(SHA256.HashData(requestId.ToByteArray()))|long.MinValue;
   await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key})");
@@ -54,9 +57,9 @@ public class FeedbackService(AppDb db,MealService meals){
   await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({number!}))");
   var employee=await db.Employees.AsNoTracking().SingleOrDefaultAsync(e=>e.Number==number);
   if(employee?.Active!=true)return new(false,"El número de empleado no existe o está dado de baja. Solicita al operador revisar el catálogo.");
-  var entry=new FeedbackEntry{RequestId=requestId,Fingerprint=fingerprint,CreatedAt=DateTime.UtcNow,EmployeeId=employee.Id,EmployeeNumber=employee.Number,EmployeeName=employee.Name,DiningRoomId=room.Id,Kind=kind!,Message=text,ReceivedBy=user.Identity.Name??"",Ip=ip};
+  var entry=new FeedbackEntry{RequestId=requestId,Fingerprint=fingerprint,CreatedAt=DateTime.UtcNow,EmployeeId=employee.Id,EmployeeNumber=employee.Number,EmployeeName=employee.Name,DiningRoomId=room.Id,Kind=kind!,Topic=topic!,Message=text,ReceivedBy=user.Identity.Name??"",Ip=ip};
   db.FeedbackEntries.Add(entry);await db.SaveChangesAsync();
-  db.AuditLogs.Add(new(){Actor=entry.ReceivedBy,Ip=ip,Action="Recepción de comentario",Target=entry.Folio,Detail=$"{kind} · {room.Name} · Número proporcionado: {employee.Number}. Identificación declarada por el comensal."});
+  db.AuditLogs.Add(new(){Actor=entry.ReceivedBy,Ip=ip,Action="Recepción de comentario",Target=entry.Folio,Detail=$"{kind} · Tema: {topic} · {room.Name} · Número proporcionado: {employee.Number}. Identificación declarada por el comensal."});
   await db.SaveChangesAsync();await tx.CommitAsync();return new(true,$"Gracias por compartir tu opinión. Conserva tu folio: {entry.Folio}.",entry.Id);
  }
  public async Task<FeedbackResult> FollowUpAsync(ClaimsPrincipal user,string ip,long id,int version,string? status,string? note){
@@ -78,6 +81,8 @@ public class FeedbackService(AppDb db,MealService meals){
  "EmployeeId" integer NOT NULL REFERENCES "Employees"("Id") ON DELETE RESTRICT,"EmployeeNumber" text NOT NULL,"EmployeeName" text NOT NULL,
  "DiningRoomId" integer NOT NULL REFERENCES "DiningRooms"("Id") ON DELETE RESTRICT,"Kind" text NOT NULL,"Message" text NOT NULL,"Status" text NOT NULL,
  "ReceivedBy" text NOT NULL,"Ip" text NOT NULL,"Version" integer NOT NULL DEFAULT 1);
+ ALTER TABLE "FeedbackEntries" ADD COLUMN IF NOT EXISTS "Topic" text NOT NULL DEFAULT 'Sin clasificar';
+ CREATE INDEX IF NOT EXISTS "IX_FeedbackEntries_Topic_CreatedAt" ON "FeedbackEntries"("Topic","CreatedAt");
  CREATE UNIQUE INDEX IF NOT EXISTS "IX_FeedbackEntries_RequestId" ON "FeedbackEntries"("RequestId");
  CREATE INDEX IF NOT EXISTS "IX_FeedbackEntries_CreatedAt_Id" ON "FeedbackEntries"("CreatedAt","Id");
  CREATE INDEX IF NOT EXISTS "IX_FeedbackEntries_DiningRoomId_Status" ON "FeedbackEntries"("DiningRoomId","Status");

@@ -8,7 +8,8 @@ En el menú, Inicio y la pantalla Registrar servicio aparece **Tu opinión cuent
 
 1. Número de empleado, de uno a cinco dígitos, existente y activo.
 2. Tipo, en un combo: **Queja**, **Sugerencia** o **Reconocimiento**.
-3. Mensaje de 10 a 3000 caracteres.
+3. Tema, en el combo **¿Sobre qué es tu comentario?**: **Comida y bebidas**, **Servicio y tiempos de atención**, **Trato del personal**, **Limpieza e higiene**, **Instalaciones y equipo** u **Otro tema**.
+4. Mensaje de 10 a 3000 caracteres.
 
 Para Operador el comedor se obtiene de su terminal autorizada y asignación; no se puede cambiar mediante el formulario ni falsificando su parámetro. Coordinador y Administrador pueden recibir comentarios seleccionando el comedor, pues trabajan también desde equipos administrativos.
 
@@ -22,10 +23,10 @@ La recepción no depende del horario de desayuno/comida/cena, no requiere regist
 
 Incluye:
 
-- Filtros de fechas, comedor, tipo, estado y número de empleado.
+- Filtros de fechas, comedor, tipo, tema, estado y número de empleado.
 - Total y cantidades por **Pendiente**, **En atención** y **Resuelto**.
-- Gráfica por tipo de comentario.
-- Tabla con folio, fecha CDMX, comedor, número, nombre del catálogo al recibir, tipo y estado.
+- Gráficas por tipo de comentario y por tema.
+- Tabla con folio, fecha CDMX, comedor, número, nombre del catálogo al recibir, tipo, tema y estado.
 - Paginación de 50 filas y exportación CSV/Excel de hasta 10 000 comentarios, respetando filtros. Periodo máximo de 366 días de diferencia entre fechas.
 
 Los indicadores representan los filtros consultados. Se actualizan al consultar o recargar; no se agrega recarga automática que interrumpa una nota en edición. El CSV contiene el comentario original y estado actual; el historial completo se consulta dentro del folio.
@@ -52,19 +53,19 @@ Las claves foráneas preservan el historial de comentarios. La herramienta excep
 
 Primero respaldar y verificar la copia local `comedores_pruebas`. Integrar juntos `FeedbackService.cs`, `Data.cs`, las tres páginas y modelos, enlaces, CSS, JS y ajustes de `Program.cs`. Conservar los parámetros particulares de `iniciar-windows.ps1`, configuración privada, cuentas `sagdi`, IP reales de los comedores y `ForwardedHeaders` de la publicación. Este cambio no modifica el script de inicio ni el mapa de terminales.
 
-Al iniciar localmente se crean las dos tablas si faltan. Probar con datos ficticios sólo en esa base y verificar con cada perfil.
+Al iniciar localmente se crean las dos tablas si faltan y se agrega la columna de tema si el módulo ya estaba instalado. Los comentarios anteriores quedan como **Sin clasificar**, conservando folios, mensajes, notas y estados; esa categoría se puede filtrar en el tablero, pero no se ofrece para nuevas capturas. El tema es obligatorio y se conserva al atender el folio. Probar con datos ficticios sólo en esa base y verificar con cada perfil.
 
 Para **172.16.2.12**, continuar paso a paso con el usuario: paquete Linux desde copia temporal, hashes, respaldo actualizado de código/configuración/fotos/base y restauración de prueba, pausa breve, instalación preservando `appsettings.Production.json`, arranque y verificación de permisos y tablas. No copiar la base local sobre producción. La cuenta de base de datos necesita los permisos de creación de tablas que ya utiliza para las actualizaciones aditivas.
 
 En producción verificar que las páginas abren y el tablero sólo es accesible para los perfiles correctos; no registrar quejas ficticias como prueba. No borrar registros reales ni reemplazar el catálogo. Si se revierte sólo el código, conservar las tablas nuevas para no perder comentarios recibidos.
 
-**Este desarrollo no se ha instalado aún en Windows ni en el servidor del usuario.**
+El módulo inicial fue integrado y probado por el usuario en Windows. La ampliación por tema debe integrarse y probarse primero allí. El módulo todavía está pendiente de despliegue al servidor del usuario.
 
 ## Verificación
 
 - Compilación sin errores ni advertencias.
-- **139 comprobaciones** de lógica en bases temporales, incluidas validación, comedor protegido, fecha real, reenvío simultáneo, control de versión, historial, filtros, CSV y auditoría sin copia del mensaje sensible.
-- `tests/browser/feedback.cjs` crea y elimina su propia base e instancia. Verifica sesiones, CSRF, rechazo de empleados inexistentes/inactivos, privacidad del formulario, tipos, texto, doble envío, controles para todos los perfiles, mensaje HTML sin ejecución, atención concurrente con borrador conservado, filtros/gráfica, CSV, reinicio y cuatro tamaños de pantalla.
+- **146 comprobaciones** de lógica en bases temporales, incluidas validación, comedor protegido, fecha real, reenvío simultáneo, control de versión, historial, filtros y agrupación por tema, actualización de comentarios anteriores, CSV y auditoría sin copia del mensaje sensible.
+- `tests/browser/feedback.cjs` crea y elimina su propia base e instancia. Verifica sesiones, CSRF, rechazo de empleados inexistentes/inactivos, privacidad del formulario, tipos, temas, texto, doble envío, controles para todos los perfiles, mensaje HTML sin ejecución, atención concurrente con borrador conservado, filtros/gráfica, CSV, reinicio y cuatro tamaños de pantalla.
 
 Las capturas siguientes utilizan datos ficticios.
 

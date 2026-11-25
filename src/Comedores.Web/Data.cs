@@ -103,6 +103,8 @@ public class AppDb(DbContextOptions<AppDb> options, IHttpContextAccessor? contex
  protected override void OnModelCreating(ModelBuilder b) {
   base.OnModelCreating(b);
   b.Entity<FeedbackEntry>().Ignore(x=>x.Folio);
+  b.Entity<FeedbackEntry>().Property(x=>x.Topic).HasDefaultValue(FeedbackService.LegacyTopic);
+  b.Entity<FeedbackEntry>().HasIndex(x=>new{x.Topic,x.CreatedAt});
   b.Entity<FeedbackEntry>().HasIndex(x=>x.RequestId).IsUnique();
   b.Entity<FeedbackEntry>().HasIndex(x=>new{x.CreatedAt,x.Id});
   b.Entity<FeedbackEntry>().HasIndex(x=>new{x.DiningRoomId,x.Status});
